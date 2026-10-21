@@ -1,0 +1,2088 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Signal — prototype</title>
+  <style>
+    :root{
+      --bg:#08111f;
+      --panel:#0e1b2d;
+      --panel-2:#12243a;
+      --line:#1f3856;
+      --text:#edf4ff;
+      --muted:#8ea5bf;
+      --faint:#66809e;
+      --peach:#ffad8a;
+      --peach-2:#ffcf9d;
+      --mint:#69e3b8;
+      --blue:#7bb8ff;
+      --yellow:#f2d37a;
+      --red:#ff7d86;
+      --shadow:0 20px 60px rgba(0,0,0,.24)
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      background:radial-gradient(circle at 72% -10%,#18385c 0,#08111f 43%),var(--bg);
+      color:var(--text);
+      font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      min-height:100vh
+    }
+
+    button,input{font:inherit}
+    button{border:0;cursor:pointer}
+    button:disabled{cursor:default}
+
+    .app{min-height:100vh;display:flex}
+
+    .sidebar{
+      width:226px;
+      position:fixed;
+      inset:0 auto 0 0;
+      border-right:1px solid rgba(143,177,218,.13);
+      background:rgba(7,16,29,.84);
+      backdrop-filter:blur(18px);
+      padding:24px 14px;
+      display:flex;
+      flex-direction:column;
+      z-index:3
+    }
+
+    .brand{display:flex;align-items:center;gap:10px;padding:0 10px 28px}
+    .brand-mark{
+      width:34px;
+      height:34px;
+      border-radius:11px;
+      background:linear-gradient(140deg,var(--peach),#ff7f83);
+      color:#08111f;
+      display:grid;
+      place-items:center;
+      font-weight:900;
+      font-size:19px;
+      box-shadow:0 8px 22px rgba(255,148,124,.25)
+    }
+
+    .brand-name{font-weight:800;font-size:17px;letter-spacing:.02em}
+    .brand-sub{
+      font-size:10px;
+      color:var(--faint);
+      letter-spacing:.13em;
+      text-transform:uppercase;
+      margin-top:1px
+    }
+
+    .nav-label,.eyebrow{
+      font-size:10px;
+      letter-spacing:.13em;
+      text-transform:uppercase;
+      color:var(--faint);
+      font-weight:800
+    }
+
+    .nav-label{padding:0 12px 9px}
+    .nav{display:grid;gap:5px}
+
+    .nav button{
+      width:100%;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      text-align:left;
+      color:var(--muted);
+      background:transparent;
+      padding:10px 12px;
+      border-radius:12px;
+      transition:.2s
+    }
+
+    .nav button:hover{background:rgba(124,185,255,.08);color:var(--text)}
+    .nav button.active{
+      background:linear-gradient(90deg,rgba(255,173,138,.16),rgba(255,173,138,.05));
+      color:var(--peach-2);
+      box-shadow:inset 3px 0 0 var(--peach)
+    }
+
+    .nav-icon{width:20px;text-align:center;font-size:17px;opacity:.9}
+    .nav-badge{
+      margin-left:auto;
+      border:1px solid rgba(255,173,138,.25);
+      color:var(--peach-2);
+      border-radius:99px;
+      padding:2px 7px;
+      font-size:10px
+    }
+
+    .sidebar-spacer{flex:1}
+
+    .side-card{
+      background:linear-gradient(145deg,rgba(255,173,138,.13),rgba(122,184,255,.08));
+      border:1px solid rgba(255,173,138,.17);
+      border-radius:16px;
+      padding:14px;
+      margin:16px 4px
+    }
+
+    .side-card p{color:var(--muted);font-size:12px;margin:5px 0 12px}
+    .side-card strong{font-size:13px}
+    .side-card button{
+      background:var(--peach);
+      color:#08111f;
+      border-radius:9px;
+      padding:8px 10px;
+      font-weight:800;
+      font-size:12px;
+      width:100%
+    }
+
+    .profile{
+      border:0;
+      border-top:1px solid rgba(143,177,218,.12);
+      padding:17px 9px 0;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background:transparent;
+      color:var(--text);
+      text-align:left;
+      width:100%
+    }
+
+    .profile:hover{color:var(--peach-2)}
+    .avatar{
+      width:31px;
+      height:31px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      background:#245177;
+      color:#d5e9ff;
+      font-weight:800;
+      font-size:12px;
+      flex:none
+    }
+
+    .profile small{color:var(--faint);display:block;font-size:11px;margin-top:1px}
+    .profile .dots{margin-left:auto;color:var(--muted);font-size:18px}
+
+    main{
+      margin-left:226px;
+      width:calc(100% - 226px);
+      padding:0 34px 40px;
+      max-width:1460px
+    }
+
+    .topbar{
+      height:78px;
+      border-bottom:1px solid rgba(143,177,218,.12);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:20px
+    }
+
+    .date{color:var(--muted);font-size:12px}
+    .date strong{color:var(--text);font-size:13px;margin-left:7px}
+    .top-actions{display:flex;align-items:center;gap:10px}
+
+    .search{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      border:1px solid rgba(143,177,218,.17);
+      background:rgba(15,31,51,.7);
+      border-radius:11px;
+      padding:8px 11px;
+      color:var(--faint);
+      width:230px
+    }
+
+    .search input{
+      border:0;
+      outline:0;
+      background:transparent;
+      color:var(--text);
+      width:100%;
+      font-size:12px
+    }
+
+    .search input::placeholder{color:#6f86a0}
+
+    .pill{
+      border-radius:99px;
+      border:1px solid rgba(255,173,138,.25);
+      color:var(--peach-2);
+      background:rgba(255,173,138,.08);
+      font-size:11px;
+      padding:7px 10px;
+      font-weight:700
+    }
+
+    .top-avatar{
+      width:31px;
+      height:31px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      background:linear-gradient(140deg,#7bb8ff,#405e9b);
+      color:white;
+      font-weight:800;
+      font-size:11px
+    }
+
+    .page{padding-top:30px}
+    .page-head{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:24px;
+      margin-bottom:22px
+    }
+
+    .page-head h1{
+      margin:5px 0 7px;
+      font-size:30px;
+      letter-spacing:-.04em;
+      line-height:1.05
+    }
+
+    .page-head h2{margin:5px 0 0;font-size:22px;letter-spacing:-.03em}
+    .page-head p{color:var(--muted);margin:0;max-width:620px}
+    .actions{display:flex;gap:9px;flex-wrap:wrap}
+
+    .btn{
+      border-radius:10px;
+      padding:10px 13px;
+      font-weight:750;
+      font-size:12px;
+      transition:.2s
+    }
+
+    .btn.primary{background:var(--peach);color:#08111f}
+    .btn.primary:hover{background:#ffc09f;transform:translateY(-1px)}
+    .btn.ghost{
+      background:rgba(123,184,255,.07);
+      border:1px solid rgba(123,184,255,.18);
+      color:#cfe4ff
+    }
+    .btn.ghost:hover{background:rgba(123,184,255,.13)}
+    .btn.muted{background:rgba(255,255,255,.05);color:var(--muted)}
+
+    .feed-context{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 180px auto;
+      align-items:center;
+      gap:14px;
+      border:1px solid rgba(143,177,218,.13);
+      background:rgba(13,29,47,.64);
+      border-radius:15px;
+      padding:14px 16px;
+      margin-bottom:20px
+    }
+
+    .context-main strong{display:block;font-size:16px;margin-top:3px}
+    .context-main span,.context-stat span{font-size:11px;color:var(--muted)}
+    .context-stat{border-left:1px solid rgba(143,177,218,.14);padding-left:18px}
+    .context-stat strong{display:block;color:var(--mint);font-size:22px;line-height:1;margin:4px 0}
+    .context-action{color:var(--blue);font-size:11px;font-weight:800;background:transparent;white-space:nowrap}
+
+    .section-row{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      margin-bottom:12px
+    }
+
+    .section-row h2{margin:3px 0 0;font-size:21px;letter-spacing:-.03em}
+    .count-label{font-size:11px;color:var(--faint)}
+    .topic-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px}
+
+    .topic{
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(143,177,218,.15);
+      color:var(--muted);
+      padding:8px 10px;
+      border-radius:99px;
+      font-size:11px
+    }
+
+    .topic:hover,.topic.active{
+      color:var(--text);
+      border-color:rgba(255,173,138,.4);
+      background:rgba(255,173,138,.1)
+    }
+
+    .filter-panel{
+      border:1px solid rgba(123,184,255,.18);
+      background:linear-gradient(135deg,rgba(123,184,255,.09),rgba(255,255,255,.025));
+      border-radius:15px;
+      padding:14px 15px 2px;
+      margin-bottom:18px
+    }
+
+    .filter-panel p{color:var(--muted);font-size:11px;margin:4px 0 11px}
+    .filter-panel .topic-row{margin-bottom:11px;gap:8px}
+    .filter-panel .topic{font-size:11px;padding:8px 12px;white-space:nowrap}
+
+    .stories{display:grid;gap:10px;margin-top:8px}
+
+    .story{
+      display:grid;
+      grid-template-columns:5px minmax(0,1fr) 218px;
+      gap:14px;
+      align-items:start;
+      border:1px solid rgba(143,177,218,.13);
+      background:rgba(13,29,47,.72);
+      border-radius:15px;
+      padding:15px;
+      cursor:pointer;
+      transition:.2s
+    }
+
+    .story:hover{
+      border-color:rgba(123,184,255,.35);
+      transform:translateY(-1px);
+      box-shadow:0 12px 28px rgba(0,0,0,.12)
+    }
+
+    .story-bar{
+      width:5px;
+      border-radius:8px;
+      background:var(--blue);
+      height:100%;
+      min-height:94px
+    }
+
+    .story:nth-child(2) .story-bar{background:var(--mint)}
+    .story:nth-child(3) .story-bar{background:var(--yellow)}
+    .story:nth-child(4) .story-bar{background:var(--peach)}
+    .story h3{font-size:16px;line-height:1.2;margin:4px 0 6px;letter-spacing:-.025em}
+    .story p{margin:0;color:var(--muted);font-size:12px}
+    .story-main{min-width:0}
+
+    .kicker{
+      font-size:10px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:var(--peach-2);
+      font-weight:850
+    }
+
+    .feature-meta{
+      display:flex;
+      align-items:center;
+      gap:7px;
+      flex-wrap:wrap;
+      margin-top:13px
+    }
+
+    .mini-chip{
+      font-size:10px;
+      color:#a9c0d8;
+      border:1px solid rgba(152,184,218,.18);
+      padding:5px 8px;
+      border-radius:99px;
+      background:rgba(255,255,255,.03)
+    }
+
+    .story-side{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:9px
+    }
+
+    .save{
+      background:transparent;
+      color:var(--faint);
+      font-size:16px;
+      padding:0 2px;
+      line-height:1
+    }
+
+    .save:hover,.save.saved{color:var(--peach-2)}
+    .reaction{font-size:11px;font-weight:800}
+    .reaction.down{color:var(--red)}
+    .reaction.up{color:var(--mint)}
+    .reaction.flat{color:var(--yellow)}
+
+    .call-box{
+      width:100%;
+      border-top:1px solid rgba(143,177,218,.12);
+      padding-top:9px
+    }
+
+    .call-label{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      color:#b8cae0;
+      font-size:10px;
+      font-weight:800;
+      margin-bottom:7px
+    }
+
+    .call-label span{color:var(--faint);font-weight:600}
+    .call-buttons{display:flex;gap:6px;justify-content:flex-end}
+
+    .call-btn{
+      border:1px solid rgba(143,177,218,.19);
+      border-radius:8px;
+      padding:6px 9px;
+      color:var(--muted);
+      background:rgba(255,255,255,.035);
+      font-size:11px;
+      transition:.18s
+    }
+
+    .call-btn:hover{color:var(--text);border-color:rgba(255,255,255,.32)}
+    .call-btn.up.selected{color:#08111f;background:var(--mint);border-color:var(--mint);font-weight:800}
+    .call-btn.down.selected{color:#08111f;background:var(--red);border-color:var(--red);font-weight:800}
+    .call-btn:disabled{opacity:.72}
+
+    .call-result{
+      display:block;
+      font-size:10px;
+      text-align:right;
+      margin-top:6px
+    }
+
+    .call-result.pending{color:var(--yellow)}
+    .call-result.good{color:var(--mint);font-weight:800}
+    .call-result.miss{color:var(--red);font-weight:800}
+
+    .community{margin-top:2px;width:100%}
+    .community-line{
+      display:flex;
+      justify-content:space-between;
+      gap:6px;
+      color:var(--faint);
+      font-size:9px
+    }
+
+    .community-line strong{color:#a9bdd5;font-weight:700}
+    .community-meter{
+      height:5px;
+      display:flex;
+      gap:2px;
+      overflow:hidden;
+      border-radius:99px;
+      background:rgba(255,255,255,.06);
+      margin-top:5px
+    }
+
+    .community-meter .up{background:var(--mint)}
+    .community-meter .down{background:var(--red)}
+
+    .card{
+      border:1px solid rgba(143,177,218,.13);
+      background:rgba(13,29,47,.72);
+      border-radius:16px;
+      padding:17px
+    }
+
+    .card h3{margin:4px 0 0;font-size:16px;letter-spacing:-.02em}
+    .card-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .text-link{color:var(--blue);font-size:11px;font-weight:750;background:transparent}
+
+    .explore-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+      margin-bottom:26px
+    }
+
+    .topic-card{
+      min-height:118px;
+      border-radius:16px;
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      border:1px solid rgba(143,177,218,.14);
+      overflow:hidden;
+      position:relative;
+      color:white;
+      text-align:left
+    }
+
+    .topic-card:hover{transform:translateY(-1px);filter:brightness(1.08)}
+    .topic-card:after{
+      content:"";
+      position:absolute;
+      width:100px;
+      height:100px;
+      border:1px solid rgba(255,255,255,.16);
+      border-radius:50%;
+      right:-35px;
+      bottom:-46px
+    }
+
+    .topic-card strong{font-size:17px;letter-spacing:-.03em}
+    .topic-card span{font-size:11px;color:rgba(255,255,255,.7)}
+    .topic-card.orange{background:linear-gradient(145deg,#683f3a,#2d2738)}
+    .topic-card.blue{background:linear-gradient(145deg,#244c73,#172d4c)}
+    .topic-card.green{background:linear-gradient(145deg,#1b5c57,#152f45)}
+    .topic-card.purple{background:linear-gradient(145deg,#4d3d73,#272d4d)}
+    .topic-card.yellow{background:linear-gradient(145deg,#6d5830,#323147)}
+    .topic-card.red{background:linear-gradient(145deg,#703c4e,#2e2b44)}
+
+    .calendar-strip{
+      display:grid;
+      grid-template-columns:repeat(7,1fr);
+      gap:8px;
+      margin-bottom:20px
+    }
+
+    .calendar-strip.recent{grid-template-columns:repeat(5,1fr)}
+
+    .day{
+      border:1px solid rgba(143,177,218,.14);
+      background:rgba(13,29,47,.72);
+      padding:12px 8px;
+      border-radius:13px;
+      text-align:center;
+      color:var(--muted);
+      font-size:10px
+    }
+
+    .day strong{display:block;font-size:18px;color:var(--text);margin-top:4px}
+    .day.active{border-color:rgba(255,173,138,.48);background:rgba(255,173,138,.12);color:var(--peach-2)}
+    .day.active strong{color:var(--peach-2)}
+    .day.future{border-color:rgba(123,184,255,.3);background:rgba(123,184,255,.07);color:var(--blue)}
+    .day.future strong{color:var(--blue)}
+    .day i{width:5px;height:5px;background:var(--mint);border-radius:50%;display:block;margin:8px auto 0}
+    .day.future i{background:var(--blue)}
+
+    .calendar-layout{
+      display:grid;
+      grid-template-columns:1.15fr .85fr;
+      gap:16px
+    }
+
+    .agenda{display:grid;gap:10px}
+    .agenda-section{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:7px 2px 1px}
+    .agenda-section strong{font-size:13px}
+    .agenda-section span{color:var(--faint);font-size:10px}
+    .agenda-row{
+      display:grid;
+      grid-template-columns:58px 8px 1fr auto;
+      gap:12px;
+      align-items:start;
+      padding:15px;
+      border:1px solid rgba(143,177,218,.13);
+      background:rgba(13,29,47,.72);
+      border-radius:14px
+    }
+
+    .agenda-row.future{border-color:rgba(123,184,255,.25);background:linear-gradient(135deg,rgba(123,184,255,.09),rgba(13,29,47,.72))}
+
+    .agenda-row time{font-size:11px;color:var(--faint);font-weight:800}
+    .agenda-row h3{font-size:14px;margin:0 0 4px}
+    .agenda-row p{font-size:11px;color:var(--muted);margin:0}
+    .agenda-source{display:inline-block;color:var(--blue);font-size:10px;font-weight:750;margin-top:7px;text-decoration:none}.agenda-source:hover{text-decoration:underline}
+
+    .event-dot{
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:var(--peach);
+      box-shadow:0 0 0 4px rgba(255,173,138,.1);
+      margin-top:4px
+    }
+
+    .event-dot.blue{background:var(--blue);box-shadow:0 0 0 4px rgba(123,184,255,.1)}
+    .event-dot.mint{background:var(--mint);box-shadow:0 0 0 4px rgba(105,227,184,.1)}
+
+    .impact{
+      font-size:10px;
+      border-radius:99px;
+      padding:4px 7px;
+      border:1px solid rgba(105,227,184,.24);
+      color:var(--mint);
+      white-space:nowrap
+    }
+
+    .impact.high{color:var(--peach-2);border-color:rgba(255,173,138,.25)}
+    .impact.future{color:var(--blue);border-color:rgba(123,184,255,.28)}
+    .right-column{display:grid;align-content:start;gap:16px}
+    .calendar-aside{min-width:0}
+    .calendar-filter-options{margin-top:13px;margin-bottom:0}
+
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:10px;
+      margin-bottom:20px
+    }
+
+    .stat-card{
+      border:1px solid rgba(143,177,218,.13);
+      background:rgba(13,29,47,.72);
+      border-radius:14px;
+      padding:15px
+    }
+
+    .stat-card strong{
+      display:block;
+      font-size:27px;
+      letter-spacing:-.05em;
+      margin:5px 0 1px
+    }
+
+    .stat-card span{font-size:11px;color:var(--muted)}
+    .prediction-list{display:grid;gap:11px}
+
+    .prediction{
+      border:1px solid rgba(143,177,218,.13);
+      background:rgba(13,29,47,.72);
+      border-radius:15px;
+      padding:16px
+    }
+
+    .prediction-top{
+      display:flex;
+      justify-content:space-between;
+      gap:12px
+    }
+
+    .prediction h3{font-size:14px;margin:4px 0}
+    .prediction p{font-size:11px;color:var(--muted);margin:0}
+    .prediction .call-box{margin-top:13px}
+    .status{
+      font-size:10px;
+      color:var(--yellow);
+      border:1px solid rgba(242,211,122,.25);
+      padding:4px 7px;
+      border-radius:99px;
+      height:max-content;
+      white-space:nowrap
+    }
+
+    .status.resolved{color:var(--mint);border-color:rgba(105,227,184,.25)}
+
+    .history{margin-top:19px}
+    .history table{width:100%;border-collapse:collapse;margin-top:10px;font-size:11px}
+    .history th{
+      text-align:left;
+      color:var(--faint);
+      font-weight:700;
+      padding:8px;
+      border-bottom:1px solid rgba(143,177,218,.14)
+    }
+
+    .history td{
+      padding:10px 8px;
+      border-bottom:1px solid rgba(143,177,218,.08);
+      color:#cddbea
+    }
+
+    .hit{color:var(--mint);font-weight:800}
+    .miss{color:var(--red);font-weight:800}
+
+    .profile-hero{
+      display:flex;
+      align-items:center;
+      gap:15px;
+      border:1px solid rgba(123,184,255,.2);
+      background:linear-gradient(135deg,rgba(123,184,255,.14),rgba(13,29,47,.78));
+      border-radius:19px;
+      padding:20px;
+      margin-bottom:16px
+    }
+
+    .profile-avatar{
+      width:58px;
+      height:58px;
+      border-radius:18px;
+      display:grid;
+      place-items:center;
+      background:linear-gradient(140deg,#7bb8ff,#405e9b);
+      color:white;
+      font-weight:900;
+      font-size:18px;
+      flex:none
+    }
+
+    .profile-hero h1{font-size:25px;margin:4px 0 3px;letter-spacing:-.04em}
+    .profile-hero p{color:var(--muted);font-size:12px;margin:0}
+    .profile-hero .actions{margin-left:auto}
+
+    .account-grid{
+      display:grid;
+      grid-template-columns:1.2fr .8fr;
+      gap:16px
+    }
+
+    .record-summary{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:8px
+    }
+
+    .record-summary strong{font-size:34px;letter-spacing:-.06em;color:var(--mint)}
+    .record-summary span{font-size:11px;color:var(--muted)}
+    .record-bar{
+      height:8px;
+      display:flex;
+      gap:2px;
+      overflow:hidden;
+      border-radius:99px;
+      margin:15px 0 17px;
+      background:rgba(255,255,255,.06)
+    }
+
+    .record-bar .correct{background:var(--mint)}
+    .record-bar .wrong{background:var(--red)}
+    .account-list{display:grid;gap:1px}
+    .account-row{
+      display:grid;
+      grid-template-columns:1fr auto auto;
+      gap:12px;
+      align-items:center;
+      padding:11px 0;
+      border-bottom:1px solid rgba(143,177,218,.09);
+      font-size:11px
+    }
+
+    .account-row:last-child{border-bottom:0}
+    .account-row span{color:var(--muted)}
+    .account-row .result{font-weight:800}
+    .account-row .date-label{color:var(--faint);font-size:10px}
+
+    .social-stat{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      border-bottom:1px solid rgba(143,177,218,.1);
+      padding:11px 0;
+      color:var(--muted);
+      font-size:11px
+    }
+
+    .social-stat:last-child{border-bottom:0}
+    .social-stat strong{color:var(--text);font-size:15px}
+    .social-note{color:var(--muted);font-size:12px;margin:12px 0 0}
+
+    .saved-empty{
+      padding:34px;
+      text-align:center;
+      color:var(--muted);
+      border:1px dashed rgba(143,177,218,.2);
+      border-radius:16px
+    }
+
+    .saved-empty strong{color:var(--text);display:block;font-size:15px;margin-bottom:5px}
+
+    .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+    .principle{
+      display:flex;
+      gap:12px;
+      padding:16px;
+      border:1px solid rgba(143,177,218,.13);
+      border-radius:14px;
+      background:rgba(13,29,47,.72)
+    }
+
+    .principle-no{
+      width:27px;
+      height:27px;
+      border-radius:9px;
+      display:grid;
+      place-items:center;
+      background:rgba(255,173,138,.14);
+      color:var(--peach-2);
+      font-weight:800;
+      flex:none
+    }
+
+    .principle h3{font-size:14px;margin:0 0 4px}
+    .principle p{font-size:11px;color:var(--muted);margin:0}
+
+    .about-hero{
+      border:1px solid rgba(123,184,255,.2);
+      background:linear-gradient(135deg,rgba(123,184,255,.16),rgba(13,29,47,.8));
+      border-radius:20px;
+      padding:24px;
+      margin-bottom:16px
+    }
+
+    .about-hero h2{
+      font-size:30px;
+      line-height:1.05;
+      letter-spacing:-.05em;
+      margin:7px 0 10px;
+      max-width:660px
+    }
+
+    .about-hero p{color:#c6d5e7;max-width:690px;margin:0}
+
+    .notice{
+      background:rgba(242,211,122,.08);
+      border:1px solid rgba(242,211,122,.2);
+      color:#eadba6;
+      padding:12px 14px;
+      border-radius:12px;
+      font-size:11px;
+      margin-top:15px
+    }
+
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(3,9,17,.74);
+      backdrop-filter:blur(10px);
+      z-index:10;
+      display:grid;
+      place-items:center;
+      padding:20px
+    }
+
+    .modal{
+      width:min(790px,100%);
+      max-height:90vh;
+      overflow:auto;
+      background:#0c1b2e;
+      border:1px solid rgba(143,177,218,.22);
+      border-radius:21px;
+      box-shadow:0 35px 100px rgba(0,0,0,.5);
+      padding:24px
+    }
+
+    .modal-close{
+      float:right;
+      background:rgba(255,255,255,.06);
+      color:var(--muted);
+      width:30px;
+      height:30px;
+      border-radius:9px;
+      font-size:17px
+    }
+
+    .modal h2{
+      font-size:30px;
+      line-height:1.05;
+      letter-spacing:-.045em;
+      max-width:650px;
+      margin:9px 0
+    }
+
+    .modal .lead{color:#c5d5e7;font-size:14px;max-width:680px}
+    .modal-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:13px;margin-top:19px}
+
+    .modal-section{
+      border:1px solid rgba(143,177,218,.13);
+      border-radius:14px;
+      padding:15px;
+      background:rgba(255,255,255,.025)
+    }
+
+    .modal-section h3{
+      font-size:12px;
+      letter-spacing:.1em;
+      text-transform:uppercase;
+      color:var(--faint);
+      margin:0 0 8px
+    }
+
+    .modal-section p{font-size:12px;color:#d1deec;margin:0}
+    .source-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
+
+    .source{
+      display:inline-flex;
+      flex-direction:column;
+      gap:2px;
+      min-width:150px;
+      font-size:10px;
+      border-radius:10px;
+      padding:7px 9px;
+      background:rgba(123,184,255,.08);
+      color:#bddaff;
+      border:1px solid rgba(123,184,255,.18);
+      text-decoration:none
+    }
+
+    .source:hover{border-color:rgba(123,184,255,.46);background:rgba(123,184,255,.13)}
+    .source strong{font-size:10px;color:#d9eaff}
+    .source small{font-size:9px;color:var(--faint)}
+
+    .modal-call{
+      border:1px solid rgba(255,173,138,.2);
+      background:rgba(255,173,138,.06);
+      border-radius:14px;
+      padding:14px;
+      margin-top:18px
+    }
+
+    .modal-call .call-box{border-top:0;padding-top:0}
+    .modal-call .call-buttons{justify-content:flex-start}
+    .modal-call .call-result{text-align:left}
+    .modal-footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-top:18px;
+      padding-top:15px;
+      border-top:1px solid rgba(143,177,218,.13)
+    }
+
+    .toast{
+      position:fixed;
+      right:24px;
+      bottom:24px;
+      background:#eaf4ff;
+      color:#0b1a2d;
+      padding:11px 14px;
+      border-radius:11px;
+      box-shadow:var(--shadow);
+      font-size:12px;
+      font-weight:800;
+      z-index:20;
+      animation:up .25s ease
+    }
+
+    @keyframes up{
+      from{transform:translateY(8px);opacity:0}
+      to{transform:translateY(0);opacity:1}
+    }
+
+    .mobile-nav{display:none}
+
+    @media(max-width:1100px){
+      main{padding-left:24px;padding-right:24px}
+      .story{grid-template-columns:5px minmax(0,1fr) 190px}
+      .explore-grid{grid-template-columns:repeat(2,1fr)}
+      .account-grid{grid-template-columns:1fr}
+    }
+
+    @media(max-width:760px){
+      .sidebar{display:none}
+      main{margin-left:0;width:100%;padding:0 15px 80px}
+      .topbar{height:68px}
+      .date{font-size:10px}
+      .date strong{display:block;margin:0;margin-top:2px}
+      .search{width:145px}
+      .pill{display:none}
+      .page{padding-top:22px}
+      .page-head{display:block}
+      .page-head h1{font-size:27px}
+      .actions{margin-top:15px}
+      .feed-context{grid-template-columns:1fr 1fr}
+      .context-action{grid-column:span 2;text-align:left;padding-top:2px}
+      .context-stat{padding-left:13px}
+      .story{grid-template-columns:4px minmax(0,1fr);gap:11px;padding:13px}
+      .story-side{grid-column:2;align-items:stretch;border-top:1px solid rgba(143,177,218,.12);padding-top:10px}
+      .save{align-self:flex-end;margin-bottom:-2px}
+      .call-buttons{justify-content:flex-start}
+      .call-result{text-align:left}
+      .community-line{max-width:260px}
+      .explore-grid{grid-template-columns:1fr 1fr}
+      .calendar-strip{gap:4px}
+      .day{padding:9px 3px}
+      .day strong{font-size:15px}
+      .calendar-layout,.about-grid,.modal-grid{grid-template-columns:1fr}
+      .calendar-aside{margin-top:16px;gap:10px}
+      .calendar-aside .card{padding:13px}
+      .calendar-filter-options{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding-bottom:2px}
+      .calendar-filter-options .topic{flex:0 0 auto;font-size:10px;padding:7px 9px}
+      .calendar-reminder-card h3{font-size:14px}
+      .calendar-reminder-card p{font-size:11px;line-height:1.4}
+      .feed-intro{display:block}.feed-intro .social-tabs{margin-top:10px;width:max-content}
+      .filter-panel .topic-row{flex-wrap:nowrap;overflow-x:auto;padding-bottom:3px}
+      .agenda-row{grid-template-columns:48px 8px 1fr}
+      .agenda-row .impact{grid-column:3;justify-self:start;margin-top:4px}
+      .stats{grid-template-columns:1fr 1fr}
+      .stats .stat-card:last-child{grid-column:span 2}
+      .profile-hero{display:block}
+      .profile-hero .actions{margin-left:0}
+      .profile-avatar{margin-bottom:10px}
+      .modal{padding:18px}
+      .modal h2{font-size:25px}
+      .modal-footer{align-items:stretch;flex-direction:column}
+      .modal-footer .btn{width:100%}
+      .mobile-nav{
+        display:flex;
+        position:fixed;
+        bottom:0;
+        left:0;
+        right:0;
+        height:64px;
+        background:rgba(7,16,29,.94);
+        backdrop-filter:blur(18px);
+        border-top:1px solid rgba(143,177,218,.15);
+        z-index:5;
+        justify-content:space-around
+      }
+      .mobile-nav button{
+        background:transparent;
+        color:var(--muted);
+        font-size:10px;
+        padding:8px 12px
+      }
+      .mobile-nav button.active{color:var(--peach-2)}
+      .mobile-nav span{display:block;font-size:17px;margin-bottom:1px}
+    }
+
+    /* Social-feed presentation: posts first, predictions as a small bonus. */
+    .social-layout{display:grid;grid-template-columns:minmax(0,720px) 265px;gap:24px;align-items:start;max-width:1050px;margin:0 auto}
+    .social-feed{min-width:0}
+    .feed-intro{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}
+    .feed-intro h2{font-size:23px;letter-spacing:-.04em;margin:4px 0 0}
+    .feed-intro p{color:var(--muted);font-size:12px;line-height:1.45;margin:4px 0 0;max-width:500px}
+    .social-tabs{display:flex;gap:5px;background:rgba(255,255,255,.04);padding:4px;border-radius:10px}
+    .social-tabs button{background:transparent;color:var(--muted);padding:7px 10px;border-radius:7px;font-size:11px}
+    .social-tabs button.active{color:var(--text);background:#1a304c}
+    .social-rail{display:grid;gap:12px;padding-top:3px}
+    .rail-profile{display:flex;align-items:center;gap:10px}
+    .rail-profile strong{display:block;font-size:12px}
+    .rail-profile span{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+    .rail-profile .avatar{background:linear-gradient(140deg,#7bb8ff,#405e9b)}
+    .rail-link{margin-left:auto;color:var(--blue);background:transparent;font-size:10px;font-weight:800}
+    .rail-card{border-top:1px solid rgba(143,177,218,.1);padding-top:13px}
+    .rail-card h3{font-size:13px;margin:4px 0 6px}
+    .rail-card p{font-size:11px;color:var(--muted);margin:0}
+    .post{border:1px solid rgba(143,177,218,.16);background:rgba(13,29,47,.82);border-radius:17px;margin-bottom:14px;overflow:hidden;transition:.2s}
+    .post:hover{border-color:rgba(123,184,255,.33);box-shadow:0 14px 32px rgba(0,0,0,.12)}
+    .post-head{display:flex;align-items:center;gap:10px;padding:14px 15px 8px}
+    .post-avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#08111f;font-size:10px;font-weight:900;flex:none}
+    .post-avatar.orange{background:var(--peach)}
+    .post-avatar.purple{background:#b49bff}
+    .post-avatar.blue{background:var(--blue)}
+    .post-avatar.green{background:var(--mint)}
+    .post-author{min-width:0}
+    .post-author strong{font-size:12px;display:block}
+    .post-author span{font-size:10px;color:var(--muted);display:block;margin-top:1px}
+    .post-more{margin-left:auto;color:var(--muted);background:transparent;font-size:17px;padding:3px 5px;line-height:1}
+    .post-topic{padding:0 15px;color:var(--peach-2);font-size:10px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}
+    .post h3{font-size:22px;line-height:1.12;letter-spacing:-.04em;margin:7px 15px 7px}
+    .post-dek{color:#c3d0df;font-size:13px;margin:0 15px 13px}
+    .post-visual{margin:0 15px 13px;border:1px solid rgba(123,184,255,.16);background:linear-gradient(145deg,rgba(21,52,80,.72),rgba(9,21,36,.76));border-radius:13px;padding:12px 12px 10px}
+    .visual-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
+    .visual-title{font-size:11px;font-weight:800;color:#dbeaff}
+    .visual-subtitle{font-size:10px;color:var(--muted);margin-top:2px}
+    .visual-badge{font-size:9px;border:1px solid rgba(255,255,255,.15);color:var(--faint);border-radius:99px;padding:3px 6px;white-space:nowrap}
+    .graph{height:132px;position:relative;overflow:visible;border-radius:8px}
+    .graph-plot{position:absolute;inset:15px 2px 9px 32px}
+    .graph-plot svg{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
+    .graph-line{fill:none;stroke:var(--peach);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 2px 3px rgba(255,173,138,.22))}
+    .graph-area{fill:rgba(255,173,138,.08)}
+    .graph-point{position:absolute;width:9px;height:9px;border-radius:50%;background:#0c1b2e;border:2px solid var(--peach);box-shadow:0 0 0 3px rgba(255,173,138,.08);transform:translate(-50%,-50%);z-index:2}
+    .graph-y-label{position:absolute;left:0;transform:translateY(-50%);font-size:8px;color:#9eb4cd;font-weight:750;white-space:nowrap;z-index:3}
+    .graph-point-label{position:absolute;font-size:8px;color:#ffd1c0;font-weight:850;white-space:nowrap;transform:translate(-100%,-110%);text-shadow:0 1px 3px #0c1b2e;z-index:3}
+    .graph-event-line{stroke:rgba(242,211,122,.75);stroke-width:1.2;stroke-dasharray:3 3}
+    .graph-event-label{position:absolute;top:-13px;transform:translateX(-50%);font-size:8px;color:var(--yellow);font-weight:850;letter-spacing:.06em;white-space:nowrap;z-index:3}
+    .graph-bars{height:105px;display:flex;align-items:end;gap:10px;padding:4px 8px 0}
+    .graph-bar-wrap{height:100%;flex:1;display:flex;flex-direction:column;justify-content:end;align-items:center;gap:5px;min-width:0}
+    .graph-bar{width:100%;max-width:56px;border-radius:6px 6px 2px 2px;background:linear-gradient(to top,#4e8cc5,#86c7ff);min-height:9px}
+    .graph-bar-wrap:nth-child(2) .graph-bar{background:linear-gradient(to top,#6d5cc0,#b49bff)}
+    .graph-bar-wrap:nth-child(3) .graph-bar{background:linear-gradient(to top,#318c7b,#69e3b8)}
+    .graph-bar-wrap:nth-child(4) .graph-bar{background:linear-gradient(to top,#d6806d,var(--peach))}
+    .graph-bar-wrap span{font-size:9px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px}
+    .graph-value{font-size:8px;color:#dbeaff;font-weight:800;margin-bottom:2px}
+    .graph-context{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;color:#a9bdd4;font-size:9px;padding:0 2px;margin-top:1px}
+    .graph-context span{display:grid;gap:1px;min-width:0}
+    .graph-context small{color:var(--faint);font-size:8px;line-height:1;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+    .graph-context strong{color:#e6f0fc;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .graph-context .graph-change strong{color:var(--mint)}
+    .graph-context .graph-change.down strong{color:var(--red)}
+    .graph-context .graph-change.flat strong{color:#dbeaff}
+    .graph-context-bar{grid-template-columns:1.35fr .65fr}
+    .graph-axis{display:flex;justify-content:space-between;gap:6px;color:var(--faint);font-size:9px;padding:0 2px;margin-top:2px}
+    .graph-axis .event{color:var(--yellow)}
+    .visual-note{font-size:10px;color:#b8cae0;margin:8px 0 0;padding-top:8px;border-top:1px solid rgba(143,177,218,.1)}
+    .post-caption{padding:0 15px;color:#d5e3f2;font-size:12px}
+    .post-caption strong{color:var(--peach-2);font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-right:4px}
+    .post-caption .insight-follow{color:#cbe9df}
+    .post-caption .insight-separator{color:var(--faint);margin:0 3px}
+    .post-sources{padding:0 15px 2px;margin-top:2px}
+    .source-label{display:block;color:var(--faint);font-size:9px;font-weight:850;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+    .source-inline{display:flex;gap:7px;flex-wrap:wrap}
+    .post-sources .source{min-width:0;flex:1 1 180px;padding:6px 8px;font-size:9px}
+    .post-sources .source strong{font-size:9px}.post-sources .source small{font-size:8px}
+    .source-missing{display:block;color:var(--red);font-size:10px}
+    .post-actions{display:flex;align-items:center;gap:14px;padding:12px 15px 9px;margin-top:12px;border-top:1px solid rgba(143,177,218,.1)}
+    .post-action{background:transparent;color:var(--muted);font-size:12px;padding:0;display:flex;align-items:center;gap:4px}
+    .post-action:hover{color:var(--text)}
+    .post-action.liked{color:var(--red)}
+    .post-action.save-action{margin-left:auto}
+    .prediction-bonus{margin:0 15px 14px;border:1px solid rgba(242,211,122,.16);background:rgba(242,211,122,.045);border-radius:11px;padding:9px 10px}
+    .prediction-bonus-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .prediction-bonus-head span{font-size:9px;color:var(--yellow);font-weight:850;letter-spacing:.1em;text-transform:uppercase}
+    .prediction-bonus-head strong{display:block;color:#dce5f0;font-size:11px;margin-top:2px}
+    .prediction-toggle{background:transparent;color:var(--yellow);font-size:10px;font-weight:800;white-space:nowrap}
+    .prediction-question{font-size:10px;color:#dce5f0;margin:9px 0 0;padding:8px 9px;border-radius:8px;background:rgba(255,255,255,.035)}
+    .prediction-question strong{color:var(--yellow)}
+    .prediction-horizon{font-size:9px;color:var(--muted);margin-top:3px}
+    .prediction-bonus .call-box{margin-top:9px}
+    .prediction-bonus .call-buttons{justify-content:flex-start}
+    .prediction-bonus .call-result{text-align:left}
+    .prediction-bonus .community{display:none}
+    .post .feature-meta{padding:0 15px;margin-top:0;margin-bottom:12px}
+    .post .mini-chip{background:rgba(255,255,255,.025)}
+    .post-event{display:flex;align-items:center;gap:7px;padding:0 15px;color:var(--muted);font-size:10px;margin-top:8px}
+    .post-event .country-flag{font-size:16px;line-height:1}
+    .post-event strong{color:#d8e6f5;font-weight:800}
+    .post-event time{color:var(--peach-2);font-weight:750}
+    .post-event .event-label{color:var(--faint);font-size:9px;text-transform:uppercase;letter-spacing:.08em}
+    .comments-preview{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 15px 12px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.035);color:#c7d7e9;font-size:11px}
+    .comments-preview p{margin:0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .comments-preview strong{color:var(--peach-2);margin-right:4px}
+    .comments-preview button,.comments-head button{background:transparent;color:var(--blue);font-size:10px;font-weight:800;white-space:nowrap}
+    .comments-panel{margin:0 15px 13px;border:1px solid rgba(143,177,218,.15);border-radius:12px;background:rgba(7,18,31,.52);padding:12px}
+    .comments-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:9px;border-bottom:1px solid rgba(143,177,218,.1)}
+    .comments-head strong{display:block;color:#e5effa;font-size:12px;margin-top:2px}
+    .comment{display:flex;gap:9px;padding:11px 0;border-bottom:1px solid rgba(143,177,218,.08)}
+    .comment:last-of-type{border-bottom:0}
+    .comment-avatar{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:9px;font-weight:900;color:#08111f;background:var(--blue)}
+    .comment-avatar.purple{background:#b49bff}.comment-avatar.green{background:var(--mint)}.comment-avatar.orange{background:var(--peach)}
+    .comment-body{min-width:0}
+    .comment-meta{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+    .comment-meta strong{font-size:11px;color:#e3eefb}.comment-meta span{font-size:9px;color:var(--faint)}
+    .comment-body p{font-size:11px;line-height:1.45;color:#c5d5e6;margin:3px 0 5px}
+    .comment-like{background:transparent;color:var(--muted);font-size:10px;padding:0}.comment-like.liked{color:var(--red)}
+    .comment-composer{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px dashed rgba(143,177,218,.18);border-radius:9px;padding:9px 10px;color:var(--faint);font-size:10px;margin-top:10px}
+    .comment-composer span{color:var(--blue);font-weight:800;white-space:nowrap}
+    .comment-empty{padding:13px 0 2px;color:var(--muted);font-size:11px}
+    .preview-switch{display:flex;gap:3px;padding:3px;border:1px solid rgba(143,177,218,.15);border-radius:9px;background:rgba(255,255,255,.035)}
+    .preview-switch button{background:transparent;color:var(--muted);font-size:9px;padding:5px 7px;border-radius:6px}.preview-switch button.active{background:#1a304c;color:var(--text)}
+    .device-preview{position:relative;display:block;width:390px;max-width:calc(100vw - 32px);min-height:760px;margin:24px auto;border:1px solid rgba(143,177,218,.25);border-radius:30px;overflow:hidden;background:var(--bg);box-shadow:0 26px 80px rgba(0,0,0,.38)}
+    .device-preview main{margin-left:0;width:100%;padding:0 15px 80px;max-width:none}
+    .device-preview .sidebar{display:none}
+    .device-preview .topbar{height:92px;display:block;padding-top:8px}
+    .device-preview .top-actions{margin-top:5px;gap:6px}.device-preview .top-actions .search{flex:1;min-width:0;width:auto}.device-preview .preview-switch button{padding:4px 5px}
+    .device-preview .date{font-size:10px}.device-preview .date strong{display:block;margin:2px 0 0}.device-preview .search{width:145px}.device-preview .pill{display:none}
+    .device-preview .mobile-nav{display:flex;position:absolute;bottom:0;left:0;right:0;height:64px;background:rgba(7,16,29,.96);backdrop-filter:blur(18px);border-top:1px solid rgba(143,177,218,.15);z-index:5;justify-content:space-around}
+    .device-preview .mobile-nav button{background:transparent;color:var(--muted);font-size:10px;padding:8px 12px}.device-preview .mobile-nav button.active{color:var(--peach-2)}.device-preview .mobile-nav span{display:block;font-size:17px;margin-bottom:1px}
+    .device-preview .social-layout{display:block}.device-preview .social-rail{display:none}.device-preview .feed-intro{display:block}.device-preview .feed-intro .social-tabs{margin-top:10px;width:max-content}.device-preview .filter-panel .topic-row{flex-wrap:nowrap;overflow-x:auto;padding-bottom:3px}.device-preview .page-head{display:block}.device-preview .page-head h1{font-size:27px}.device-preview .actions{margin-top:15px}.device-preview .feed-context{grid-template-columns:1fr 1fr}.device-preview .context-action{grid-column:span 2;text-align:left;padding-top:2px}.device-preview .story{grid-template-columns:4px minmax(0,1fr);gap:11px;padding:13px}.device-preview .story-side{grid-column:2;align-items:stretch;border-top:1px solid rgba(143,177,218,.12);padding-top:10px}.device-preview .call-buttons{justify-content:flex-start}.device-preview .call-result{text-align:left}.device-preview .post h3{font-size:20px}.device-preview .post-visual{margin-left:11px;margin-right:11px}.device-preview .post-head,.device-preview .post-topic,.device-preview .post-dek,.device-preview .post-caption{padding-left:11px;padding-right:11px}.device-preview .post-event{padding-left:11px;padding-right:11px}.device-preview .post-sources{padding-left:11px;padding-right:11px}.device-preview .post-actions{padding-left:11px;padding-right:11px}.device-preview .prediction-bonus{margin-left:11px;margin-right:11px}.device-preview .comments-preview,.device-preview .comments-panel{margin-left:11px;margin-right:11px}.device-preview .calendar-layout{display:block}.device-preview .calendar-aside{margin-top:16px;gap:10px}.device-preview .calendar-aside .card{padding:13px}.device-preview .calendar-filter-options{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding-bottom:2px}.device-preview .calendar-filter-options .topic{flex:0 0 auto;font-size:10px;padding:7px 9px}.device-preview .calendar-reminder-card h3{font-size:14px}.device-preview .calendar-reminder-card p{font-size:11px;line-height:1.4}
+
+    @media(max-width:1100px){
+      .social-layout{grid-template-columns:minmax(0,1fr) 235px;gap:16px}
+    }
+
+    @media(max-width:760px){
+      .social-layout{display:block}
+      .social-rail{display:none}
+      .post h3{font-size:20px}
+      .post-visual{margin-left:11px;margin-right:11px}
+      .post-head,.post-topic,.post-dek,.post-caption{padding-left:11px;padding-right:11px}
+      .post-event{padding-left:11px;padding-right:11px}
+      .post-actions{padding-left:11px;padding-right:11px}
+      .comments-preview,.comments-panel{margin-left:11px;margin-right:11px}
+      .prediction-bonus{margin-left:11px;margin-right:11px}
+      .preview-switch{display:none}
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    const PREDICTION_HORIZON = '7 days'
+
+    const stories = [
+      {
+        id:'vacancies',
+        tag:'ECONOMY & JOBS',
+        title:'UK vacancies fall below 700,000',
+        dek:'Early ONS estimates put vacancies at 691,000 in July–September 2026, down 21,000 on the previous quarter.',
+        tone:'down',
+        read:'3 min',
+        impact:'High',
+        eventDate:'20 Oct 2026',
+        country:'United Kingdom',
+        flag:'🇬🇧',
+        saved:true,
+        why:'Vacancies are a timely signal of employer demand. Fewer open roles can mean a cooler hiring market, although one release does not decide whether the economy is in trouble.',
+        next:'If vacancies keep falling while unemployment rises, the labour market could be losing momentum. If employment and pay remain resilient, the weaker vacancy count may be a gradual normalisation rather than a sharp downturn.',
+        body:'The Office for National Statistics estimated 691,000 vacancies in July to September 2026. That was 21,000 (2.9%) lower than April to June and below 700,000 for the first time since February to April 2021. Vacancies fell in 14 of 18 industry sectors. ONS labels these estimates early and subject to revision.',
+        sources:[
+          {name:'ONS · Jobs and vacancies in the UK',url:'https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/jobsandvacanciesintheuk/latest',freshness:'Released 20 Oct 2026'},
+          {name:'ONS · Previous vacancy release',url:'https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/jobsandvacanciesintheuk/september2026',freshness:'Released 13 Oct 2026'}
+        ],
+        sourceNote:'Official ONS estimates. The chart shows the published three-month vacancy series; it is not a live market-price chart.',
+        topics:['Economy & jobs'],
+        author:'Signal editorial',
+        authorRole:'Source-linked brief · updated 20 Oct 2026',
+        avatar:'S',
+        avatarTone:'orange',
+        comments:0,
+        commentPreview:[],
+        lens:'Check the next vacancies release alongside unemployment and pay before drawing a bigger conclusion.',
+        graph:{type:'line',instrument:'ONS vacancies estimate',title:'UK vacancies across recent releases',subtitle:'Official ONS estimate · thousands',window:'Mar–May → Jul–Sep 2026',decimals:0,suffix:'k',values:[707,712,702,691],labels:['Mar–May','Apr–Jun','Jun–Aug','Jul–Sep'],note:'691,000 in Jul–Sep 2026; 21,000 fewer than Apr–Jun. ONS says these are early estimates and may be revised.',referenceLabel:'Earliest shown',latestLabel:'Latest estimate',changeLabel:'Across releases'}
+      },
+      {
+        id:'earnings',
+        tag:'ECONOMY & JOBS',
+        title:'Average weekly pay reaches £757, but real growth stays modest',
+        dek:'ONS estimates total weekly pay at £757 and regular pay at £707 in August 2026; regular earnings were 0.8% higher in real terms using CPI.',
+        tone:'up',
+        read:'3 min',
+        impact:'High',
+        eventDate:'20 Oct 2026',
+        country:'United Kingdom',
+        flag:'🇬🇧',
+        saved:true,
+        why:'Pay data connects the labour market to household spending and inflation. Stronger pay can support demand, while weak real growth means households may still feel squeezed.',
+        next:'If real pay growth strengthens, the Bank of England may see more persistent demand pressure. If pay cools while vacancies keep falling, the case for a softer economy becomes stronger.',
+        body:'The ONS estimated average weekly earnings at £757 for total pay and £707 for regular pay in August 2026. After adjusting regular pay for consumer-price inflation, growth was 0.8% using CPI and 0.6% using CPIH for June to August. Those are different inflation measures, so they should not be combined.',
+        sources:[
+          {name:'ONS · Average weekly earnings in Great Britain',url:'https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/averageweeklyearningsingreatbritain/october2026',freshness:'Released 20 Oct 2026'}
+        ],
+        sourceNote:'Official ONS estimates. Total pay includes bonuses; regular pay excludes bonuses. The chart compares weekly pay levels, while real growth is reported separately in the source.',
+        topics:['Economy & jobs','Central banks'],
+        author:'Signal editorial',
+        authorRole:'Source-linked brief · updated 20 Oct 2026',
+        avatar:'S',
+        avatarTone:'purple',
+        comments:0,
+        commentPreview:[],
+        lens:'Read pay together with vacancies and inflation: one number rarely tells the whole labour-market story.',
+        graph:{type:'bar',instrument:'Average weekly earnings',title:'Average weekly earnings in August',subtitle:'Official ONS estimate · pounds per week',window:'August 2026',decimals:0,prefix:'£',values:[757,707],labels:['Total pay','Regular pay'],note:'£757 total pay and £707 regular pay in August 2026. This compares pay levels; it is not a seven-day market return.',summary:'£757 total · £707 regular'}
+      },
+      {
+        id:'imf-outlook',
+        tag:'GLOBAL OUTLOOK',
+        title:'IMF sees steady global growth, with risks still tilted down',
+        dek:'The IMF projects world output growth of 3.1% in 2026 and 3.4% in 2027, while warning about conflict, trade tensions and fiscal vulnerability.',
+        tone:'flat',
+        read:'4 min',
+        impact:'High',
+        eventDate:'13 Oct 2026',
+        country:'Global',
+        flag:'🌍',
+        saved:false,
+        why:'A global forecast is a baseline for thinking about demand, trade and policy. The important distinction is between the central projection and the risks that could move the outcome away from it.',
+        next:'If conflict or trade restrictions intensify, the IMF could revise growth lower. If investment and productivity hold up and tensions ease, growth could surprise higher than the baseline.',
+        body:'In its October 2026 World Economic Outlook, the IMF projected global growth of 3.1% in 2026 and 3.4% in 2027. It projected global headline inflation of 4.7% this year, easing to 4.1% next year, and identified conflict escalation, a reassessment of AI expectations, trade tensions and fiscal vulnerabilities as downside risks.',
+        sources:[
+          {name:'IMF · World Economic Outlook, October 2026',url:'https://www.imf.org/en/publications/weo/issues/2026/10/13/world-economic-outlook-october-2026',freshness:'Published 13 Oct 2026'}
+        ],
+        sourceNote:'Primary source: the IMF’s October 2026 World Economic Outlook. The chart shows IMF projections, not observed returns or a market-price forecast.',
+        topics:['Global outlook','Economy & jobs'],
+        author:'Signal editorial',
+        authorRole:'Source-linked brief · updated 13 Oct 2026',
+        avatar:'S',
+        avatarTone:'blue',
+        comments:0,
+        commentPreview:[],
+        lens:'Separate the IMF’s baseline from the risks that could make the next forecast look different.',
+        graph:{type:'line',instrument:'IMF world output growth',title:'IMF world growth projection',subtitle:'October 2026 WEO · annual % change',window:'2026 → 2027 projection',decimals:1,suffix:'%',values:[3.1,3.4],labels:['2026','2027'],note:'The IMF projects 3.1% global growth in 2026 and 3.4% in 2027. These are forecasts, not realised market performance.',referenceLabel:'2026 projection',latestLabel:'2027 projection',changeLabel:'Projection change'}
+      },
+      {
+        id:'energy-cap',
+        tag:'PRICES & HOUSEHOLDS',
+        title:'UK energy price cap rises 4% for the October–December quarter',
+        dek:'Ofgem raised the typical direct-debit cap from £1,663 to £1,723 a year, an extra £60 for a typical household.',
+        tone:'up',
+        read:'3 min',
+        impact:'High',
+        eventDate:'1 Oct 2026',
+        country:'United Kingdom',
+        flag:'🇬🇧',
+        saved:false,
+        why:'Energy bills affect household budgets directly and can feed into measured inflation. The cap is a typical benchmark, not a promise that every household pays the same amount.',
+        next:'If wholesale gas prices remain elevated, future caps could stay higher. If wholesale costs ease, the next quarterly adjustment could reduce some of the pressure on households.',
+        body:'Ofgem said the energy price cap for 1 October to 31 December 2026 would rise by 4%. For a typical dual-fuel household paying by direct debit, the annual benchmark moved from £1,663 to £1,723, or about £60 more over a year. Ofgem attributed the rise mainly to higher wholesale gas costs.',
+        sources:[
+          {name:'Ofgem · October 2026 energy price cap',url:'https://www.ofgem.gov.uk/press-release/energy-price-cap-will-rise-4-october-2026',freshness:'Published 26 Aug 2026 · applies 1 Oct–31 Dec 2026'}
+        ],
+        sourceNote:'Primary source: Ofgem’s price-cap announcement. The graph shows the published typical annual direct-debit benchmark, not an individual bill or an energy-market price.',
+        topics:['Prices & households','Energy'],
+        author:'Signal editorial',
+        authorRole:'Source-linked brief · effective 1 Oct 2026',
+        avatar:'S',
+        avatarTone:'green',
+        comments:0,
+        commentPreview:[],
+        lens:'Watch wholesale energy costs and the next cap announcement before assuming the pressure is permanent.',
+        graph:{type:'line',instrument:'Typical annual energy cap',title:'Typical annual direct-debit cap',subtitle:'Ofgem cap · pounds per year',window:'Before October → October–December 2026',decimals:0,prefix:'£',values:[1663,1723],labels:['Before Oct','Oct–Dec'],note:'Ofgem’s typical benchmark moves from £1,663 to £1,723, a £60 annual increase. It is a cap on unit rates and standing charges, not a fixed bill.',referenceLabel:'Before Oct',latestLabel:'Oct–Dec cap',changeLabel:'Cap change'}
+      },
+      {
+        id:'boe-september',
+        tag:'CENTRAL BANKS',
+        title:'Bank of England holds 3.75% as inflation risk remains elevated',
+        dek:'The MPC voted 6–3 to keep Bank Rate at 3.75%; three members preferred a 0.25 percentage-point increase.',
+        tone:'flat',
+        read:'4 min',
+        impact:'High',
+        eventDate:'17 Sep 2026',
+        country:'United Kingdom',
+        flag:'🇬🇧',
+        saved:false,
+        why:'The split vote shows that the decision was not unanimous. Rates affect borrowing costs, sterling expectations and how investors read new inflation and growth data.',
+        next:'If inflation stays above target, the three dissenting votes may matter more at later meetings. If demand and pay cool, the majority’s decision to hold could become easier to maintain.',
+        body:'At its September 2026 meeting, the Bank of England’s Monetary Policy Committee kept Bank Rate at 3.75% by six votes to three. Three members preferred a 0.25 percentage-point increase. The Bank also reported that CPI inflation had risen to 3.1% in August and highlighted uncertainty around the energy shock.',
+        sources:[
+          {name:'Bank of England · September 2026 MPC summary and minutes',url:'https://www.bankofengland.co.uk/monetary-policy-summary-and-minutes/2026/september-2026',freshness:'Published 17 Sep 2026'}
+        ],
+        sourceNote:'Primary source: the Bank of England’s policy summary and minutes. The chart shows the vote split, not a market-price path.',
+        topics:['Central banks','Economy & jobs'],
+        author:'Signal editorial',
+        authorRole:'Source-linked brief · updated 17 Sep 2026',
+        avatar:'S',
+        avatarTone:'orange',
+        comments:0,
+        commentPreview:[],
+        lens:'Read the vote split and the inflation evidence together; neither is enough on its own.',
+        graph:{type:'bar',instrument:'MPC vote split',title:'MPC vote split',subtitle:'Bank of England · September 2026',window:'17 September 2026',decimals:0,suffix:' votes',values:[6,3],labels:['Hold at 3.75%','Raise 0.25pp'],note:'Six members voted to hold Bank Rate at 3.75%; three preferred a 0.25 percentage-point increase. The bars show votes, not market prices.',summary:'6 hold · 3 raise'}
+      },
+      {
+        id:'iran-sanctions',
+        tag:'INTERNATIONAL RELATIONS',
+        title:'UK adds two people to its Iran sanctions list',
+        dek:'The Foreign, Commonwealth & Development Office updated the UK sanctions list on 12 October 2026 with two additions under the Iran regime.',
+        tone:'flat',
+        read:'3 min',
+        impact:'High',
+        eventDate:'12 Oct 2026',
+        country:'Iran',
+        flag:'🇮🇷',
+        saved:false,
+        why:'Sanctions are a foreign-policy tool: they can restrict assets, travel and roles without being the same thing as military action. Their practical effect depends on enforcement and coordination with other countries.',
+        next:'Watch whether the UK or its partners announce further designations, change the stated grounds, or connect sanctions to wider diplomacy. This notice records the measure; it does not quantify its economic effect.',
+        body:'On 12 October 2026, the FCDO said it had added two entries to the UK Sanctions List under the Iran sanctions regime. The notice records asset-freeze, travel-ban and director-disqualification sanctions and sets out the official grounds for the additions.',
+        sources:[
+          {name:'GOV.UK · Iran sanctions notice',url:'https://assets.publishing.service.gov.uk/media/6accd987f1ba855cc196ab02/Sanctions_Notice__Iran__12_October_2026.pdf',freshness:'Updated 12 Oct 2026'}
+        ],
+        sourceNote:'Primary source: the FCDO sanctions notice. The chart counts the two additions recorded in the notice; it is not an estimate of economic impact.',
+        topics:['International relations'],
+        author:'Signal editorial',
+        authorRole:'Source-linked brief · updated 12 Oct 2026',
+        avatar:'S',
+        avatarTone:'red',
+        comments:0,
+        commentPreview:[],
+        lens:'Separate the legal action itself from the harder question of whether it changes behaviour or negotiations.',
+        graph:{type:'bar',instrument:'UK Iran sanctions list',title:'New entries in the UK notice',subtitle:'FCDO notice · 12 October 2026',window:'12 October 2026',decimals:0,suffix:' people',values:[2],labels:['Individuals added'],note:'The notice records two additions. A count of designations is not a measure of the sanctions’ economic effect.',summary:'2 individuals added'}
+      },
+      {
+        id:'un-iran-veto',
+        tag:'INTERNATIONAL RELATIONS',
+        title:'UN debate follows vetoes over Iran sanctions monitoring',
+        dek:'UN coverage says China and Russia vetoed a Security Council resolution that would have extended the mandate of the panel monitoring implementation of sanctions on Iran.',
+        tone:'flat',
+        read:'4 min',
+        impact:'High',
+        eventDate:'1 Oct 2026',
+        country:'Iran / United Nations',
+        flag:'🌐',
+        saved:false,
+        why:'The episode shows how international enforcement depends on agreement among major powers. A veto can block one monitoring mechanism even when the underlying dispute remains active.',
+        next:'The next useful signal is whether members propose another resolution, a replacement monitoring arrangement, or a diplomatic route around the disagreement. The veto itself is not proof that sanctions have disappeared.',
+        body:'On 1 October 2026, UN General Assembly meeting coverage described debate after China and Russia vetoed a Security Council resolution that would have extended the mandate of the Panel of Experts monitoring implementation of UN sanctions on Iran. The account also records disagreement over the interpretation of the sanctions “snapback” process.',
+        sources:[
+          {name:'United Nations · General Assembly meeting coverage',url:'https://press.un.org/en/2026/ga12792.doc.htm',freshness:'Published 1 Oct 2026'}
+        ],
+        sourceNote:'Primary source: UN Meetings Coverage. The chart shows the two vetoes recorded in the UN account and the fact that the proposed extension did not pass; it does not measure the wider state of sanctions.',
+        topics:['International relations'],
+        author:'Signal editorial',
+        authorRole:'Source-linked brief · updated 1 Oct 2026',
+        avatar:'S',
+        avatarTone:'blue',
+        comments:0,
+        commentPreview:[],
+        lens:'Look for the institutional consequence—what monitoring or enforcement happens next—rather than treating a veto as the whole story.',
+        graph:{type:'bar',instrument:'UN Security Council process',title:'What the UN account records',subtitle:'Iran sanctions monitoring · 1 October 2026',window:'1 October 2026',decimals:0,suffix:' recorded',values:[2,0],labels:['Vetoes cast','Extension passed'],note:'The UN account records two vetoes. Zero means the proposed extension did not pass; it does not mean all sanctions or monitoring ended.',summary:'2 vetoes · no extension'}
+      },
+      {
+        id:'iran-iaea',
+        tag:'INTERNATIONAL RELATIONS',
+        title:'IAEA reports a verification gap in Iran',
+        dek:'In its 1 September report, the IAEA said it had not received the information or access needed to verify the status of Iran’s declared nuclear material and facilities.',
+        tone:'down',
+        read:'4 min',
+        impact:'High',
+        eventDate:'1 Sep 2026',
+        country:'Iran',
+        flag:'🇮🇷',
+        saved:false,
+        why:'Nuclear safeguards are about whether inspectors can independently check what is happening. A verification gap increases uncertainty even without proving what Iran is or is not doing.',
+        next:'Watch for renewed access, updated declarations or a new IAEA report. The direction of diplomacy matters because access and information are what allow the Agency to narrow the uncertainty.',
+        body:'The IAEA’s report dated 1 September 2026 said the Agency had neither received information from Iran about the status of declared nuclear material and facilities nor had access to conduct in-field verification during the reporting period. It therefore said it could not discharge its safeguards responsibilities for those facilities and associated material.',
+        sources:[
+          {name:'IAEA · Iran safeguards report GOV/2026/50',url:'https://www.iaea.org/sites/default/files/gov2026-50.pdf',freshness:'Report dated 1 Sep 2026'},
+          {name:'IAEA · Iran board reports index',url:'https://www.iaea.org/newscenter/focus/iran/iaea-and-iran-iaea-board-reports',freshness:'Report directory checked 21 Oct 2026'}
+        ],
+        sourceNote:'Primary source: IAEA Board report GOV/2026/50. The chart is a clearly labelled status indicator from the report, not a count of facilities or a claim about the purpose of Iran’s programme.',
+        topics:['International relations'],
+        author:'Signal editorial',
+        authorRole:'Source-linked brief · updated 1 Sep 2026',
+        avatar:'S',
+        avatarTone:'purple',
+        comments:0,
+        commentPreview:[],
+        lens:'Keep “cannot verify” separate from “has happened”: the report describes an information and access problem, not a confirmed outcome.',
+        graph:{type:'bar',instrument:'IAEA safeguards access',title:'IAEA verification status',subtitle:'Binary status indicator · report dated 1 September 2026',window:'September 2026 report',decimals:0,suffix:' status',values:[0,1],labels:['Access reported','Verification gap'],note:'0 = no access was reported in the period; 1 = the report identifies a verification gap. This is a status indicator, not a facility count.',summary:'No access reported'}
+      },
+      {
+        id:'us-fed-september',
+        tag:'CENTRAL BANKS',
+        title:'US Federal Reserve raises its target range to 3.75–4%',
+        dek:'The FOMC voted unanimously on 16 September to raise the federal funds target range by 0.25 percentage points, citing elevated inflation alongside resilient activity.',
+        tone:'up',
+        read:'4 min',
+        impact:'High',
+        eventDate:'16 Sep 2026',
+        country:'United States',
+        flag:'🇺🇸',
+        saved:false,
+        why:'The Fed’s policy rate influences borrowing costs in the United States and financial conditions elsewhere. The unanimous vote also shows how the Committee framed inflation as important enough to justify tighter policy despite solid activity.',
+        next:'Watch the October and December meetings, inflation readings and labour-market data. The next move will depend on whether inflation remains elevated or activity and employment weaken.',
+        body:'In its statement released on 16 September 2026, the Federal Open Market Committee said it had approved a 12–0 decision to raise the target range for the federal funds rate by 0.25 percentage points to 3.75–4%. The statement said economic activity was expanding at a solid pace, job gains had kept pace with the workforce and inflation remained elevated.',
+        sources:[
+          {name:'Federal Reserve · FOMC statement',url:'https://www.federalreserve.gov/monetarypolicy/files/monetary20260916a1.pdf',freshness:'Released 16 Sep 2026'},
+          {name:'Federal Reserve · 2026 FOMC press releases',url:'https://www.federalreserve.gov/newsevents/pressreleases/2026-press-fomc.htm',freshness:'Release index updated 16 Sep 2026'}
+        ],
+        sourceNote:'Primary source: the Federal Reserve’s statement. The chart tracks the lower bound of the target range before and after the decision; it is not a prediction of the next move.',
+        topics:['Central banks','Economy & jobs'],
+        author:'Signal editorial',
+        authorRole:'Source-linked brief · updated 16 Sep 2026',
+        avatar:'S',
+        avatarTone:'blue',
+        comments:0,
+        commentPreview:[],
+        lens:'Compare the Fed’s policy decision with its inflation and employment evidence before guessing the next move.',
+        graph:{type:'line',instrument:'US federal funds target range',title:'Target range lower bound',subtitle:'Federal Reserve · September 2026 decision',window:'Before → after decision',decimals:2,suffix:'%',values:[3.50,3.75],labels:['Before','After'],note:'The Fed raised the target range from 3.50–3.75% to 3.75–4.00%. This chart tracks the lower bound, which rose by 0.25 percentage points.',referenceLabel:'Lower bound before',latestLabel:'Lower bound after',changeLabel:'Lower bound change'}
+      },
+      {
+        id:'eu-raw-materials',
+        tag:'EU POLICY',
+        title:'EU selects 46 strategic raw-material projects',
+        dek:'The European Commission selected 46 projects across 16 member states to strengthen extraction, processing and recycling supply chains for strategic raw materials.',
+        tone:'up',
+        read:'3 min',
+        impact:'High',
+        eventDate:'9 Oct 2026',
+        country:'European Union',
+        flag:'🇪🇺',
+        saved:false,
+        why:'Raw materials policy connects industrial strategy, energy transition, defence and trade. More EU capacity could reduce dependence on individual suppliers, but selection is only the policy step—not proof that projects are already producing materials.',
+        next:'Watch permitting, financing, construction and offtake agreements. The effect on supply chains will depend on which projects become operational and how quickly.',
+        body:'On 9 October 2026, the European Commission announced 46 new Strategic Projects across 16 EU member states. It said the projects cover extraction, processing, recycling and integrated combinations across 15 of the 17 strategic raw materials identified in the Critical Raw Materials Act, including materials used in batteries, defence, aerospace and permanent magnets.',
+        sources:[
+          {name:'European Commission · Strategic Projects for raw materials',url:'https://ec.europa.eu/commission/presscorner/api/files/document/print/en/ip_26_2113/IP_26_2113_EN.pdf',freshness:'Published 9 Oct 2026'}
+        ],
+        sourceNote:'Primary source: the European Commission press release. The chart counts the selected projects and the member states named in the announcement; it does not estimate future output.',
+        topics:['Global outlook','Economy & jobs'],
+        author:'Signal editorial',
+        authorRole:'Source-linked brief · updated 9 Oct 2026',
+        avatar:'S',
+        avatarTone:'green',
+        comments:0,
+        commentPreview:[],
+        lens:'Separate an announced project from a completed mine, factory or recycling facility—the delivery timeline is the important next question.',
+        graph:{type:'bar',instrument:'EU strategic raw-material projects',title:'Scale of the EU announcement',subtitle:'European Commission · 9 October 2026',window:'9 October 2026',decimals:0,suffix:'',values:[46,16],labels:['Projects','Member states'],note:'The Commission selected 46 projects across 16 member states. The numbers describe the announcement, not completed production capacity.',summary:'46 projects · 16 states'}
+      }
+    ];
+
+    const topics = ['All briefs','Economy & jobs','Prices & households','Central banks','International relations','Global outlook','Energy'];
+
+    function esc(value){
+      return String(value).replace(/[&<>"']/g,function(m){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]
+      })
+    }
+
+    function cap(value){
+      return value ? value.charAt(0).toUpperCase() + value.slice(1) : ''
+    }
+
+    function storyById(id){
+      return stories.find(function(s){return s.id===id})
+    }
+
+    function loadState(){
+      let raw = null
+      try{
+        raw = JSON.parse(localStorage.getItem('signal-prototype-state') || 'null')
+      }catch(error){}
+
+      const savedTopic = raw && topics.includes(raw.topic) ? raw.topic : 'All briefs'
+
+      return {
+        screen:'feed',
+        previewMode:raw && raw.previewMode ? raw.previewMode : 'desktop',
+        topic:savedTopic,
+        selected:null,
+        query:'',
+        saved:new Set(raw && Array.isArray(raw.saved) ? raw.saved : stories.filter(function(s){return s.saved}).map(function(s){return s.id})),
+        predictions:raw && raw.predictions ? raw.predictions : {},
+        resolvedCalls:new Set(raw && Array.isArray(raw.resolvedCalls) ? raw.resolvedCalls : []),
+        predictionOpen:raw && raw.predictionOpen ? raw.predictionOpen : {},
+        commentOpen:raw && raw.commentOpen ? raw.commentOpen : {},
+        commentLikes:new Set(raw && Array.isArray(raw.commentLikes) ? raw.commentLikes : []),
+        community:raw && raw.community ? raw.community : {}
+      }
+    }
+
+    const state = loadState()
+
+    function persist(){
+      try{
+        localStorage.setItem('signal-prototype-state',JSON.stringify({
+          previewMode:state.previewMode,
+          topic:state.topic,
+          saved:Array.from(state.saved),
+          predictions:state.predictions,
+          resolvedCalls:Array.from(state.resolvedCalls),
+          predictionOpen:state.predictionOpen,
+          commentOpen:state.commentOpen,
+          commentLikes:Array.from(state.commentLikes),
+          community:state.community
+        }))
+      }catch(error){}
+    }
+
+    function communityFor(s){
+      if(!state.community[s.id]){
+        state.community[s.id] = {up:0,down:0}
+      }
+      return state.community[s.id]
+    }
+
+    function predictionRows(){
+      return []
+    }
+
+    function predictionStats(){
+      const rows = predictionRows()
+      const correct = rows.filter(function(r){return r.result==='correct'}).length
+      const wrong = rows.filter(function(r){return r.result==='missed'}).length
+      const active = stories.filter(function(s){
+        return state.predictions[s.id] && !state.resolvedCalls.has(s.id)
+      }).length
+      const total = correct + wrong
+      return {
+        correct:correct,
+        wrong:wrong,
+        active:active,
+        total:total,
+        accuracy:total ? Math.round(correct / total * 100) : 0
+      }
+    }
+
+    function navItem(id,icon,label,badge){
+      return '<button class="' + (state.screen===id ? 'active' : '') + '" data-go="' + id + '">' +
+        '<span class="nav-icon">' + icon + '</span><span>' + label + '</span>' +
+        (badge ? '<span class="nav-badge">' + badge + '</span>' : '') +
+        '</button>'
+    }
+
+    function shell(content){
+      const stats = predictionStats()
+      return '<div class="app ' + (state.previewMode==='mobile' ? 'device-preview' : '') + '">' +
+        '<aside class="sidebar">' +
+          '<div class="brand"><div class="brand-mark">S</div><div><div class="brand-name">signal</div><div class="brand-sub">policy, with context</div></div></div>' +
+          '<div class="nav-label">Workspace</div>' +
+          '<nav class="nav">' +
+            navItem('feed','⌂','Your brief','') +
+            navItem('explore','⌕','Explore','') +
+            navItem('calendar','◷','Calendar','') +
+            navItem('predictions','↗','Predictions',stats.active ? String(stats.active) : '') +
+            navItem('saved','♡','Saved',String(state.saved.size)) +
+            navItem('account','◎','My account',displayAccuracy(stats)) +
+            navItem('about','i','How it works','') +
+          '</nav>' +
+          '<div class="sidebar-spacer"></div>' +
+          '<div class="side-card"><strong>Make it yours</strong><p>Choose the topics and markets you want Signal to watch.</p><button data-action="toast" data-message="Personalisation flow coming next">Customise feed</button></div>' +
+          '<button class="profile" data-go="account"><div class="avatar">VR</div><div><strong>Victor Rampen</strong><small>' + stats.correct + ' correct · ' + stats.wrong + ' missed</small></div><div class="dots">···</div></button>' +
+        '</aside>' +
+        '<main>' +
+          '<header class="topbar"><div class="date">WEDNESDAY <strong>21 OCTOBER 2026</strong></div><div class="top-actions"><div class="preview-switch" aria-label="Preview size"><button class="' + (state.previewMode==='desktop' ? 'active' : '') + '" data-action="preview" data-preview="desktop">Desktop</button><button class="' + (state.previewMode==='mobile' ? 'active' : '') + '" data-action="preview" data-preview="mobile">Mobile</button></div><div class="search"><span>⌕</span><input data-search aria-label="Search" placeholder="Search topics or stories" value="' + esc(state.query) + '"></div><span class="pill">Source-linked prototype</span><button class="top-avatar" data-go="account" aria-label="Open account">VR</button></div></header>' +
+          content +
+        '</main>' +
+        '<nav class="mobile-nav">' +
+          '<button class="' + (state.screen==='feed' ? 'active' : '') + '" data-go="feed"><span>⌂</span>Brief</button>' +
+          '<button class="' + (state.screen==='explore' ? 'active' : '') + '" data-go="explore"><span>⌕</span>Explore</button>' +
+          '<button class="' + (state.screen==='calendar' ? 'active' : '') + '" data-go="calendar"><span>◷</span>Calendar</button>' +
+          '<button class="' + (state.screen==='predictions' ? 'active' : '') + '" data-go="predictions"><span>↗</span>Calls</button>' +
+          '<button class="' + (state.screen==='account' ? 'active' : '') + '" data-go="account"><span>◎</span>Account</button>' +
+        '</nav>' +
+        (state.selected ? modal(storyById(state.selected)) : '') +
+        '<div id="toast"></div>' +
+      '</div>'
+    }
+
+    function topicButtons(){
+      return '<div class="topic-row">' + topics.map(function(t){
+        return '<button class="topic ' + (state.topic===t ? 'active' : '') + '" data-action="topic" data-topic="' + t + '">' + t + '</button>'
+      }).join('') + '</div>'
+    }
+
+    function displayAccuracy(stats){
+      return stats.total ? stats.accuracy + '%' : '—'
+    }
+
+    function formatGraphValue(value,graph){
+      const decimals = typeof graph.decimals==='number' ? graph.decimals : 0
+      return (graph.prefix || '') + Number(value).toFixed(decimals) + (graph.suffix || '')
+    }
+
+    function graphPercentChange(from,to){
+      if(!Number.isFinite(from) || !Number.isFinite(to) || from===0) return '—'
+      const change = ((to-from)/from)*100
+      const digits = Math.abs(change)<1 ? 2 : 1
+      return (change>0 ? '+' : '') + change.toFixed(digits) + '%'
+    }
+
+    function graphFor(s){
+      const graph = s.graph
+      const values = graph.values || []
+      const labels = graph.labels || []
+      const max = Math.max.apply(null,values)
+      const min = Math.min.apply(null,values)
+      const eventIndex = Number.isInteger(graph.eventIndex) ? Math.max(0,Math.min(values.length-1,graph.eventIndex)) : null
+      const graphTitle = '<div class="visual-head"><div><div class="visual-title">' + esc(graph.title) + '</div><div class="visual-subtitle">' + esc(graph.subtitle) + '</div></div></div>'
+      let chart
+
+      if(graph.type==='line'){
+        const range = max - min || 1
+        const left = 4
+        const right = 96
+        const top = 10
+        const bottom = 88
+        const xFor = function(index){
+          return values.length > 1 ? left + ((right-left) / (values.length-1)) * index : (left + right) / 2
+        }
+        const yFor = function(value){
+          return bottom - ((value-min) / range) * (bottom-top)
+        }
+        const points = values.map(function(value,index){
+          return xFor(index).toFixed(1) + ',' + yFor(value).toFixed(1)
+        }).join(' ')
+        const gridYs = [top,(top+bottom)/2,bottom]
+        const grid = gridYs.map(function(y){
+          return '<line x1="0" y1="' + y + '" x2="100" y2="' + y + '" stroke="rgba(159,203,255,.13)"></line>'
+        }).join('')
+        const yLabels = [max,(max+min)/2,min].map(function(value,index){
+          return '<span class="graph-y-label" style="top:' + gridYs[index] + '%">' + esc(formatGraphValue(value,graph)) + '</span>'
+        }).join('')
+        const eventLine = eventIndex===null ? '' : '<line class="graph-event-line" x1="' + xFor(eventIndex).toFixed(1) + '" y1="' + top + '" x2="' + xFor(eventIndex).toFixed(1) + '" y2="' + bottom + '"></line>'
+        const dots = values.map(function(value,index){
+          return '<i class="graph-point" aria-hidden="true" style="left:' + xFor(index).toFixed(1) + '%;top:' + yFor(value).toFixed(1) + '%"></i>'
+        }).join('')
+        const latestIndex = values.length-1
+        const latestLabel = values.length ? '<span class="graph-point-label" style="left:' + xFor(latestIndex).toFixed(1) + '%;top:' + yFor(values[latestIndex]).toFixed(1) + '%">' + esc(formatGraphValue(values[latestIndex],graph)) + '</span>' : ''
+        const eventLabel = eventIndex===null ? '' : '<span class="graph-event-label" style="left:' + xFor(eventIndex).toFixed(1) + '%">EVENT</span>'
+        const areaPoints = left + ',' + bottom + ' ' + points + ' ' + right + ',' + bottom
+        chart = '<div class="graph"><div class="graph-plot"><svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="' + esc(graph.title + ', ' + graph.instrument + ', latest ' + formatGraphValue(values[values.length-1],graph)) + '">' + grid + '<polygon class="graph-area" points="' + areaPoints + '"></polygon>' + eventLine + '<polyline class="graph-line" points="' + points + '"></polyline></svg>' + yLabels + eventLabel + dots + latestLabel + '</div></div>'
+      }else{
+        chart = '<div class="graph"><div class="graph-bars">' + values.map(function(value,index){
+          const height = Math.max(14,Math.round(value / max * 90))
+          return '<div class="graph-bar-wrap"><strong class="graph-value">' + esc(formatGraphValue(value,graph)) + '</strong><i class="graph-bar" style="height:' + height + 'px"></i><span>' + esc(labels[index]) + '</span></div>'
+        }).join('') + '</div></div>'
+      }
+
+      const eventAxisLabel = eventIndex!==null && labels[eventIndex] ? '<span class="event">' + esc(labels[eventIndex]) + '</span>' : ''
+      const referenceValue = eventIndex!==null && values[eventIndex]!==undefined ? values[eventIndex] : values[0]
+      const referenceLabel = graph.referenceLabel || (eventIndex!==null && values[eventIndex]!==undefined ? 'At event' : 'Start')
+      const latestLabel = graph.latestLabel || 'Now'
+      const change = graphPercentChange(referenceValue,values[values.length-1])
+      const changeNumber = referenceValue ? ((values[values.length-1]-referenceValue)/referenceValue)*100 : 0
+      const changeClass = changeNumber>0.005 ? 'up' : changeNumber<-0.005 ? 'down' : 'flat'
+      const graphContext = graph.type==='bar'
+        ? '<div class="graph-context graph-context-bar"><span><small>Summary</small><strong>' + esc(graph.summary || 'Official release data') + '</strong></span><span><small>Data type</small><strong>Official source</strong></span></div>'
+        : '<div class="graph-context"><span><small>' + esc(referenceLabel) + '</small><strong>' + esc(formatGraphValue(referenceValue,graph)) + '</strong></span><span><small>' + esc(latestLabel) + '</small><strong>' + esc(formatGraphValue(values[values.length-1],graph)) + '</strong></span><span class="graph-change ' + changeClass + '"><small>' + esc(graph.changeLabel || (eventIndex!==null ? 'Since event' : 'Since start')) + '</small><strong>' + esc(change) + '</strong></span></div>'
+      const graphAxis = graph.type==='bar'
+        ? '<div class="graph-axis"><span>' + esc(labels[0]) + '</span><span>' + esc(labels[labels.length-1]) + '</span></div>'
+        : '<div class="graph-axis"><span>' + esc(labels[0]) + '</span>' + eventAxisLabel + '<span>' + esc(labels[labels.length-1]) + '</span></div>'
+      return '<div class="post-visual">' + graphTitle + chart + graphContext + graphAxis + '<p class="visual-note">' + esc(graph.note) + '</p></div>'
+    }
+
+    function eventMeta(s){
+      return '<div class="post-event"><span class="country-flag">' + esc(s.flag || '🌍') + '</span><span class="event-label">Event</span><strong>' + esc(s.country || 'Global') + '</strong><span>·</span><time>' + esc(s.eventDate || 'Date to be confirmed') + '</time></div>'
+    }
+
+    function sourceLinks(s){
+      const sources = s.sources || []
+      if(!sources.length) return '<span class="source-missing">Source pending</span>'
+      return sources.map(function(source){
+        const item = typeof source==='string' ? {name:source,freshness:'Source details pending'} : source
+        const label = '<strong>' + esc(item.name || 'Source') + '</strong><small>' + esc(item.freshness || '') + '</small>'
+        return item.url ? '<a class="source" href="' + esc(item.url) + '" target="_blank" rel="noopener">' + label + '</a>' : '<span class="source">' + label + '</span>'
+      }).join('')
+    }
+
+    function commentKey(id,index){
+      return id + ':' + index
+    }
+
+    function commentsSection(s){
+      const comments = s.commentPreview || []
+      const open = !!state.commentOpen[s.id]
+      const first = comments[0]
+      if(!open){
+        return '<div class="comments-preview"><p><strong>Discussion</strong>' + (first ? esc(first.text) : 'What would you check next?') + '</p><button data-action="toggle-comments" data-id="' + s.id + '">' + (comments.length ? 'View ' + s.comments + ' comments' : 'Start discussion') + '</button></div>'
+      }
+
+      return '<div class="comments-panel"><div class="comments-head"><div><div class="eyebrow">Discussion</div><strong>' + (comments.length ? s.comments + ' comments' : 'No comments yet') + '</strong></div><button data-action="toggle-comments" data-id="' + s.id + '">Hide</button></div>' + (comments.length ? comments.map(function(comment,index){
+        const key = commentKey(s.id,index)
+        const liked = state.commentLikes.has(key)
+        return '<div class="comment"><div class="comment-avatar ' + (comment.tone || '') + '">' + esc(comment.avatar) + '</div><div class="comment-body"><div class="comment-meta"><strong>' + esc(comment.name) + '</strong><span>' + esc(comment.role) + '</span></div><p>' + esc(comment.text) + '</p><button class="comment-like ' + (liked ? 'liked' : '') + '" data-action="comment-like" data-id="' + s.id + '" data-comment="' + index + '">' + (liked ? '♥' : '♡') + ' ' + (comment.likes + (liked ? 1 : 0)) + '</button></div></div>'
+      }).join('') : '<div class="comment-empty">This is the first discussion prompt for this brief.</div>') + '<div class="comment-composer"><span>Add a thoughtful question or piece of context</span><span>Coming next</span></div></div>'
+    }
+
+    function socialActions(s){
+      return '<div class="post-actions"><button class="post-action" data-action="toggle-comments" data-id="' + s.id + '">◌ <span>Discuss · ' + s.comments + '</span></button><button class="post-action save-action" data-action="save" data-id="' + s.id + '">' + (state.saved.has(s.id) ? '🔖' : '▱') + '</button></div>'
+    }
+
+    function postPrediction(s){
+      const open = !!state.predictionOpen[s.id]
+      const pick = state.predictions[s.id]
+      const horizon = PREDICTION_HORIZON
+      let label = 'Make a ' + horizon + ' direction call'
+      if(pick) label = 'Your ' + horizon + ' call: ' + cap(pick)
+
+      return '<div class="prediction-bonus"><div class="prediction-bonus-head"><div><span>Bonus direction call · ' + horizon + ' horizon</span><strong>' + label + '</strong></div><button class="prediction-toggle" data-action="toggle-prediction" data-id="' + s.id + '">' + (open ? 'Hide' : 'Make a ' + horizon + ' call') + '</button></div>' + (open ? predictionControls(s) : '') + '</div>'
+    }
+
+    function predictionControls(s){
+      const pick = state.predictions[s.id] || ''
+      const resolved = false
+      const horizon = PREDICTION_HORIZON
+      const community = communityFor(s)
+      const total = community.up + community.down
+      const upPercent = total ? Math.round(community.up / total * 100) : 0
+      let result = '<span class="call-result pending">Not called yet</span>'
+
+      if(resolved){
+        result = '<span class="call-result pending">Awaiting verified outcome data</span>'
+      }else if(pick){
+        result = '<span class="call-result pending">Your call: ' + cap(pick) + ' · resolves ' + horizon + ' after the event</span>'
+      }
+
+      return '<div class="call-box">' +
+        '<div class="prediction-question">What direction do you expect for <strong>' + esc(s.graph.instrument) + '</strong> in the next <strong>' + horizon + '</strong>?</div>' +
+        '<div class="prediction-horizon">Short-term lens · the educational brief comes first. Scoring waits for a verified data feed.</div>' +
+        '<div class="call-label"><span>My ' + horizon + ' call</span><span>' + (resolved ? 'Resolved' : 'Higher or lower?') + '</span></div>' +
+        '<div class="call-buttons">' +
+          '<button class="call-btn up ' + (pick==='up' ? 'selected' : '') + '" data-action="predict" data-id="' + s.id + '" data-pick="up" ' + (resolved ? 'disabled' : '') + '>↑ Up</button>' +
+          '<button class="call-btn down ' + (pick==='down' ? 'selected' : '') + '" data-action="predict" data-id="' + s.id + '" data-pick="down" ' + (resolved ? 'disabled' : '') + '>↓ Down</button>' +
+        '</div>' +
+        result +
+        '<div class="community">' + (total ? '<div class="community-line"><span>Community</span><strong>' + upPercent + '% ↑ · ' + (100-upPercent) + '% ↓</strong></div><div class="community-meter"><i class="up" style="width:' + upPercent + '%"></i><i class="down" style="width:' + (100-upPercent) + '%"></i></div>' : '<div class="community-line"><span>Community</span><strong>No calls yet</strong></div>') + '</div>' +
+      '</div>'
+    }
+
+    function storyCard(s){
+      return '<article class="post" data-story="' + s.id + '">' +
+        '<div class="post-head"><div class="post-avatar ' + s.avatarTone + '">' + s.avatar + '</div><div class="post-author"><strong>' + s.author + '</strong><span>' + s.authorRole + '</span></div><button class="post-more" data-action="toast" data-message="Post options are coming next">•••</button></div>' +
+        '<div class="post-topic">' + s.tag + '</div>' +
+        eventMeta(s) +
+        '<h3>' + s.title + '</h3>' +
+        '<p class="post-dek">' + s.dek + '</p>' +
+        graphFor(s) +
+        '<div class="post-caption"><strong>Why it matters</strong> ' + s.why + '<span class="insight-separator">·</span><span class="insight-follow">' + s.lens + '</span></div>' +
+        '<div class="feature-meta"><span class="mini-chip">' + s.read + ' read</span><span class="mini-chip">' + s.sources.length + ' source links</span></div>' +
+        '<div class="post-sources"><span class="source-label">Sources</span><div class="source-inline">' + sourceLinks(s) + '</div></div>' +
+        socialActions(s) +
+        commentsSection(s) +
+        postPrediction(s) +
+      '</article>'
+    }
+
+    function feedPage(){
+      const filtered = stories.filter(function(s){
+        return state.topic==='All briefs' || s.topics.includes(state.topic)
+      })
+      const stats = predictionStats()
+
+      return '<section class="page">' +
+        '<div class="page-head"><div><div class="eyebrow">Your personalised policy brief</div><h1>Good morning, Victor.</h1><p>Recent, source-linked events explained before you decide what you think.</p></div><div class="actions"><button class="btn ghost" data-go="explore">Explore topics</button><button class="btn primary" data-go="account">View my account</button></div></div>' +
+        '<div class="social-layout"><div class="social-feed">' +
+          '<div class="feed-intro"><div><div class="eyebrow">Signal feed</div><h2>Recent events, explained</h2><p>Every brief shows what happened, why it matters, what could change next, and where the evidence comes from.</p></div><div class="social-tabs"><button class="active">For you</button><button data-go="explore">Explore</button></div></div>' +
+          '<div class="filter-panel"><div class="eyebrow">Browse by subject</div><p>Choose the question you want to follow: jobs, household pressure, rates or international affairs.</p>' + topicButtons() + '</div>' +
+          '<div class="section-row"><div><div class="eyebrow">The short list</div><h2>' + filtered.length + ' source-linked briefs</h2></div><span class="count-label">' + (stats.total ? stats.correct + ' right · ' + stats.wrong + ' missed' : 'No scored calls yet') + '</span></div>' +
+          '<div class="stories">' + (filtered.length ? filtered.map(storyCard).join('') : '<div class="saved-empty"><strong>No briefs in this topic yet</strong>Try another filter.</div>') + '</div>' +
+        '</div><aside class="social-rail"><div class="card"><div class="rail-profile"><div class="avatar">VR</div><div><strong>Victor Rampen</strong><span>' + displayAccuracy(stats) + ' prediction accuracy</span></div><button class="rail-link" data-go="account">View</button></div><div class="social-stat"><span>Topics available</span><strong>' + (topics.length-1) + '</strong></div><div class="social-stat"><span>Saved</span><strong>' + state.saved.size + ' briefs</strong></div></div></aside></div>' +
+      '</section>'
+    }
+
+    function explorePage(){
+      const q = (state.query || '').toLowerCase()
+      const filtered = stories.filter(function(s){
+        return (state.topic==='All briefs' || s.topics.includes(state.topic)) &&
+          (!q || (s.title + ' ' + s.dek + ' ' + s.tag).toLowerCase().includes(q))
+      })
+      const resultLabel = q ? 'Search results for “' + esc(state.query) + '”' : 'Latest explainers'
+
+      return '<section class="page">' +
+        '<div class="page-head"><div><div class="eyebrow">Explore</div><h1>Find the signal.</h1><p>Browse by topic, then open a brief when you want the context behind the headline.</p></div><div class="actions"><button class="btn primary" data-action="toast" data-message="Watchlist builder coming next">+ Follow a topic</button></div></div>' +
+        '<div class="filter-panel"><div class="eyebrow">Browse by subject</div><p>International relations covers conflict, diplomacy, sanctions and agreements; the other filters cover the economic mechanism around them.</p>' + topicButtons() + '</div>' +
+        '<div class="explore-grid">' +
+          '<button class="topic-card orange" data-action="topic" data-topic="Central banks"><strong>Central banks</strong><span>Rates, inflation, policy decisions</span></button>' +
+          '<button class="topic-card blue" data-action="topic" data-topic="Economy &amp; jobs"><strong>Economy &amp; jobs</strong><span>Vacancies, pay, growth and demand</span></button>' +
+          '<button class="topic-card green" data-action="topic" data-topic="Prices &amp; households"><strong>Prices &amp; households</strong><span>Energy bills, inflation and pressure</span></button>' +
+          '<button class="topic-card purple" data-action="topic" data-topic="International relations"><strong>International relations</strong><span>Conflict, diplomacy and agreements</span></button>' +
+          '<button class="topic-card yellow" data-action="topic" data-topic="Global outlook"><strong>Global outlook</strong><span>World growth, trade and risk</span></button>' +
+          '<button class="topic-card red" data-action="topic" data-topic="Energy"><strong>Energy</strong><span>Wholesale costs and regulation</span></button>' +
+        '</div>' +
+        '<div class="section-row"><div><div class="eyebrow">' + resultLabel + '</div><h2>' + filtered.length + ' briefs to explore</h2></div></div>' +
+        '<div class="stories">' + (filtered.length ? filtered.map(storyCard).join('') : '<div class="saved-empty"><strong>No matching briefs yet</strong>Try another topic or search term.</div>') + '</div>' +
+      '</section>'
+    }
+
+    function calendarPage(){
+      return '<section class="page">' +
+        '<div class="page-head"><div><div class="eyebrow">Calendar · upcoming events</div><h1>Know what is coming next.</h1><p>Track scheduled policy decisions, parliamentary business and major releases. Past news stays in the feed.</p></div><div class="actions"><button class="btn ghost" data-action="toast" data-message="Calendar export coming next">Add to calendar</button></div></div>' +
+        '<div class="calendar-strip recent"><div class="day future active"><span>OCT</span><strong>26</strong><i></i></div><div class="day future"><span>OCT</span><strong>27</strong><i></i></div><div class="day future"><span>OCT</span><strong>28</strong><i></i></div><div class="day future"><span>NOV</span><strong>05</strong><i></i></div><div class="day future"><span>DEC</span><strong>08</strong><i></i></div></div>' +
+        '<div class="calendar-layout"><div class="agenda">' +
+          '<div class="agenda-section"><strong>Upcoming policy calendar</strong><span>5 scheduled entries</span></div>' +
+          '<div class="agenda-row future"><time>26 OCT<br>2026</time><i class="event-dot blue"></i><div><h3>UK Commons: debate on emerging risks of advanced AI</h3><p>A scheduled general debate in the Chamber. This is parliamentary business, not a confirmed division.</p><a class="agenda-source" href="https://commonsbusiness.parliament.uk/Document/107662/Html?subType=Standard" target="_blank" rel="noopener">UK Parliament · future business · checked 21 Oct 2026 ↗</a></div><span class="impact future">Scheduled</span></div>' +
+          '<div class="agenda-row future"><time>27–28 OCT<br>2026</time><i class="event-dot blue"></i><div><h3>US Federal Reserve FOMC meeting</h3><p>The next two-day meeting on the Fed’s 2026 calendar. The official schedule is the reference for the meeting date.</p><a class="agenda-source" href="https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" target="_blank" rel="noopener">Federal Reserve · 2026 FOMC calendar · updated 7 Oct 2026 ↗</a></div><span class="impact high">High impact</span></div>' +
+          '<div class="agenda-row future"><time>05 NOV<br>2026</time><i class="event-dot mint"></i><div><h3>Bank of England MPC decision and November report</h3><p>The MPC is scheduled to publish its Bank Rate decision, minutes and November Monetary Policy Report.</p><a class="agenda-source" href="https://www.bankofengland.co.uk/monetary-policy/upcoming-mpc-dates" target="_blank" rel="noopener">Bank of England · 2026 MPC dates · checked 21 Oct 2026 ↗</a></div><span class="impact high">High impact</span></div>' +
+          '<div class="agenda-row future"><time>08–09 DEC<br>2026</time><i class="event-dot blue"></i><div><h3>US Federal Reserve FOMC meeting</h3><p>The final scheduled 2026 FOMC meeting associated with a Summary of Economic Projections.</p><a class="agenda-source" href="https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" target="_blank" rel="noopener">Federal Reserve · 2026 FOMC calendar · updated 7 Oct 2026 ↗</a></div><span class="impact high">High impact</span></div>' +
+          '<div class="agenda-row future"><time>17 DEC<br>2026</time><i class="event-dot mint"></i><div><h3>Bank of England MPC decision</h3><p>The final scheduled Bank Rate decision and minutes of 2026.</p><a class="agenda-source" href="https://www.bankofengland.co.uk/monetary-policy/upcoming-mpc-dates" target="_blank" rel="noopener">Bank of England · 2026 MPC dates · checked 21 Oct 2026 ↗</a></div><span class="impact high">High impact</span></div>' +
+        '</div><aside class="right-column calendar-aside"><div class="card calendar-reminder-card"><div class="eyebrow">What belongs here</div><h3>Decisions, votes and releases.</h3><p style="color:var(--muted);font-size:12px;margin-bottom:0">The calendar is for events worth watching before they happen: central-bank meetings, parliamentary business, inflation releases, budgets and treaty deadlines.</p></div><div class="card calendar-reminder-card"><div class="eyebrow">Source rule</div><h3>Every date is checkable.</h3><p style="color:var(--muted);font-size:12px;margin-bottom:0">A parliamentary vote appears only after Parliament publishes it. Scheduled dates can change, so each entry links to the institution’s own calendar or business paper.</p></div></aside></div>' +
+      '</section>'
+    }
+
+    function predictionCard(s){
+      const resolved = false
+      return '<div class="prediction"><div class="prediction-top"><div><div class="kicker">' + s.tag + ' · 7-DAY CALL</div><h3>' + s.title + '</h3><p>' + (resolved ? 'This call has been resolved against verified data.' : 'Make a directional call as a short-term learning exercise. It stays open until a verified data feed can score it.') + '</p></div><span class="status ' + (resolved ? 'resolved' : '') + '">' + (resolved ? 'Resolved' : 'Open') + '</span></div>' + predictionControls(s) + '</div>'
+    }
+
+    function historyRows(limit){
+      const rows = predictionRows().slice(0,limit)
+      if(!rows.length) return '<tr><td colspan="4">No verified outcomes yet. Calls will appear here after a live data feed is connected.</td></tr>'
+      return rows.map(function(row){
+        return '<tr><td>' + row.topic + '</td><td>' + cap(row.call) + '</td><td>' + cap(row.outcome) + '</td><td class="' + (row.result==='correct' ? 'hit' : 'miss') + '">' + (row.result==='correct' ? 'Correct' : 'Missed') + '</td></tr>'
+      }).join('')
+    }
+
+    function predictionsPage(){
+      const stats = predictionStats()
+      return '<section class="page">' +
+        '<div class="page-head"><div><div class="eyebrow">Short-term direction calls</div><h1>Make a 7-day call.</h1><p>The brief comes first. If you want the extra challenge, choose a direction and keep the time window fixed.</p></div><div class="actions"><button class="btn ghost" data-go="account">Open my account</button></div></div>' +
+        '<div class="notice">Prediction scoring is deliberately blank until Signal is connected to a verified market or indicator data feed. No result is marked right or wrong from invented numbers.</div>' +
+        '<div class="stats"><div class="stat-card"><div class="eyebrow">Accuracy</div><strong class="good">' + displayAccuracy(stats) + '</strong><span>' + stats.correct + ' correct from ' + stats.total + ' resolved 7-day calls</span></div><div class="stat-card"><div class="eyebrow">Correct</div><strong class="good">' + stats.correct + '</strong><span>Calls that matched verified data</span></div><div class="stat-card"><div class="eyebrow">Missed</div><strong class="miss">' + stats.wrong + '</strong><span>Calls that went the other way</span></div><div class="stat-card"><div class="eyebrow">Open calls</div><strong class="cool">' + stats.active + '</strong><span>Waiting for a verified seven-day result</span></div></div>' +
+        '<div class="section-row"><div><div class="eyebrow">Your calls</div><h2>What do you think happens next?</h2></div><span class="count-label">Up or down, not hot takes</span></div>' +
+        '<div class="prediction-list">' + stories.map(predictionCard).join('') + '</div>' +
+        '<div class="card history"><div class="eyebrow">Resolved history</div><h3>Evidence over ego</h3><table><thead><tr><th>Topic</th><th>Your call</th><th>Outcome</th><th>Result</th></tr></thead><tbody>' + historyRows(8) + '</tbody></table></div>' +
+      '</section>'
+    }
+
+    function accountPage(){
+      const stats = predictionStats()
+      const rows = predictionRows().slice(0,6)
+      const correctWidth = stats.total ? Math.round(stats.correct / stats.total * 100) : 0
+      const wrongWidth = stats.total ? 100 - correctWidth : 0
+
+      return '<section class="page">' +
+        '<div class="profile-hero"><div class="profile-avatar">VR</div><div><div class="eyebrow">My account · public preview</div><h1>Victor Rampen</h1><p>@victor · source-linked briefs · learning in public through seven-day calls</p></div><div class="actions"><button class="btn ghost" data-action="share">Share profile</button><button class="btn primary" data-go="predictions">Make a call</button></div></div>' +
+        '<div class="stats"><div class="stat-card"><div class="eyebrow">Accuracy</div><strong class="good">' + displayAccuracy(stats) + '</strong><span>How often your resolved 7-day calls are right</span></div><div class="stat-card"><div class="eyebrow">Correct</div><strong class="good">' + stats.correct + '</strong><span>7-day calls that matched verified data</span></div><div class="stat-card"><div class="eyebrow">Missed</div><strong class="miss">' + stats.wrong + '</strong><span>7-day calls that did not</span></div><div class="stat-card"><div class="eyebrow">Open</div><strong class="cool">' + stats.active + '</strong><span>Calls still waiting</span></div></div>' +
+        '<div class="account-grid"><div class="card"><div class="eyebrow">Your 7-day call record</div><div class="record-summary"><strong>' + displayAccuracy(stats) + '</strong><span>' + stats.correct + ' right · ' + stats.wrong + ' wrong · ' + stats.total + ' resolved</span></div><div class="record-bar"><i class="correct" style="width:' + correctWidth + '%"></i><i class="wrong" style="width:' + wrongWidth + '%"></i></div><div class="section-row"><div><div class="eyebrow">Recent activity</div><h3>Calls you can learn from</h3></div></div><div class="account-list">' +
+          (rows.length ? rows.map(function(row){return '<div class="account-row"><span>' + row.topic + '</span><strong>' + cap(row.call) + ' → ' + cap(row.outcome) + '</strong><span class="result ' + (row.result==='correct' ? 'hit' : 'miss') + '">' + (row.result==='correct' ? 'Correct' : 'Missed') + '</span><span class="date-label">' + row.date + '</span></div>'}).join('') : '<div class="saved-empty">No resolved calls yet.</div>') +
+        '</div></div><aside class="right-column"><div class="card"><div class="eyebrow">Social signal</div><h3>Your record is part of the story.</h3><p class="social-note">Readers can compare their calls with the community without turning the brief into a hot-take feed.</p><div class="social-stat"><span>Community rank</span><strong>Not ranked yet</strong></div><div class="social-stat"><span>Reading streak</span><strong>Not measured</strong></div><div class="social-stat"><span>Topics called</span><strong>' + Object.keys(state.predictions).length + '</strong></div><button class="btn ghost" style="width:100%;margin-top:13px" data-action="toast" data-message="Profile sharing is ready in the next build">View public profile</button></div><div class="card"><div class="eyebrow">How scoring works</div><h3>Calls stay open for seven days after the event.</h3><p class="social-note">Choose a direction. After seven days, Signal will compare it with a verified data point and add the result to your record.</p><button class="text-link" data-go="about">Read the product principles →</button></div></aside></div>' +
+      '</section>'
+    }
+
+    function savedPage(){
+      const saved = stories.filter(function(s){return state.saved.has(s.id)})
+      return '<section class="page">' +
+        '<div class="page-head"><div><div class="eyebrow">Saved</div><h1>Your reading list.</h1><p>Keep the stories that deserve a second look, without losing the original context.</p></div><div class="actions"><button class="btn ghost" data-action="toast" data-message="Collections coming next">Create collection</button></div></div>' +
+        (saved.length ? '<div class="stories">' + saved.map(storyCard).join('') + '</div>' : '<div class="saved-empty"><strong>Your reading list is empty</strong>Save a story from your brief and it will appear here.</div>') +
+      '</section>'
+    }
+
+    function aboutPage(){
+      return '<section class="page"><div class="about-hero"><div class="eyebrow">About Signal</div><h2>The context layer between the headline and the decision.</h2><p>Signal is a personalised policy-news product for people who want to understand how public decisions become real-world consequences — without reading five different articles first.</p><div class="notice">Prototype principle: this is information and education, not personal financial advice.</div></div><div class="section-row"><div><div class="eyebrow">How the product works</div><h2>Four things every brief should answer</h2></div></div><div class="about-grid"><div class="principle"><div class="principle-no">01</div><div><h3>What happened?</h3><p>One clean summary with the original source and a visible freshness timestamp.</p></div></div><div class="principle"><div class="principle-no">02</div><div><h3>Why does it matter?</h3><p>Explain the mechanism, not a dramatic opinion or a generic market prediction.</p></div></div><div class="principle"><div class="principle-no">03</div><div><h3>What could change?</h3><p>Give users the next data point, vote or decision that would confirm or weaken the story.</p></div></div><div class="principle"><div class="principle-no">04</div><div><h3>Can I follow it?</h3><p>Use watchlists, a calendar and predictions to turn one article into a repeat habit.</p></div></div></div></section>'
+    }
+
+    function modal(s){
+      if(!s)return ''
+      return '<div class="modal-backdrop" data-action="backdrop"><div class="modal"><button class="modal-close" data-action="close" aria-label="Close">×</button><div class="kicker">' + s.tag + ' · SOURCE-LINKED BRIEF</div><h2>' + s.title + '</h2><p class="lead">' + s.dek + '</p><div class="feature-meta"><span class="mini-chip">' + esc(s.flag || '🌍') + ' ' + esc(s.country || 'Global') + '</span><span class="mini-chip">Event: ' + esc(s.eventDate || 'Date to be confirmed') + '</span><span class="mini-chip">' + s.read + ' read</span><span class="mini-chip">Impact: ' + s.impact + '</span></div>' + graphFor(s) + '<div class="modal-grid"><div class="modal-section"><h3>What happened?</h3><p>' + s.body + '</p></div><div class="modal-section"><h3>Why it matters</h3><p>' + s.why + '</p></div><div class="modal-section"><h3>What could happen next?</h3><p>' + s.next + '</p></div><div class="modal-section"><h3>Sources &amp; evidence</h3><p>' + esc(s.sourceNote || 'Open the linked primary source to check the date, definition and numbers behind this brief.') + '</p><div class="source-row">' + sourceLinks(s) + '</div></div></div><div class="modal-call"><div class="eyebrow">Bonus direction call · 7-day horizon</div><p style="color:var(--muted);font-size:12px;margin:5px 0 10px">A fixed-window learning exercise; results stay unscored until verified data is connected.</p>' + predictionControls(s) + '</div><div class="modal-footer"><button class="btn ghost" data-action="save" data-id="' + s.id + '">' + (state.saved.has(s.id) ? '♥ Saved' : '♡ Save brief') + '</button><button class="btn primary" data-go="account">See my record →</button></div></div></div>'
+    }
+
+    function render(){
+      let content
+      if(state.screen==='feed') content = feedPage()
+      else if(state.screen==='explore') content = explorePage()
+      else if(state.screen==='calendar') content = calendarPage()
+      else if(state.screen==='predictions') content = predictionsPage()
+      else if(state.screen==='saved') content = savedPage()
+      else if(state.screen==='account') content = accountPage()
+      else content = aboutPage()
+
+      const app = document.getElementById('app')
+      app.innerHTML = shell(content)
+      app.onclick = handleClick
+      app.onkeydown = handleKeydown
+    }
+
+    function handleClick(event){
+      const target = event.target.closest('[data-go],[data-action],[data-story]')
+      if(!target)return
+
+      if(target.dataset.action==='backdrop'){
+        if(event.target===target) closeStory()
+        return
+      }
+
+      if(target.dataset.go){
+        go(target.dataset.go)
+        return
+      }
+
+      const action = target.dataset.action
+      if(action==='close'){
+        closeStory()
+      }else if(action==='save'){
+        toggleSave(target.dataset.id)
+      }else if(action==='toggle-comments'){
+        toggleComments(target.dataset.id)
+      }else if(action==='comment-like'){
+        toggleCommentLike(target.dataset.id,Number(target.dataset.comment))
+      }else if(action==='toggle-prediction'){
+        togglePrediction(target.dataset.id)
+      }else if(action==='predict'){
+        predict(target.dataset.id,target.dataset.pick)
+      }else if(action==='topic'){
+        setTopic(target.dataset.topic)
+      }else if(action==='share'){
+        showToast('Profile link copied in this prototype')
+      }else if(action==='preview'){
+        setPreview(target.dataset.preview)
+      }else if(action==='toast'){
+        showToast(target.dataset.message || 'Coming next')
+      }else if(target.dataset.story){
+        openStory(target.dataset.story)
+      }
+    }
+
+    function handleKeydown(event){
+      if(event.key==='Enter' && event.target.matches('[data-search]')){
+        runSearch(event.target.value)
+      }
+      if(event.key==='Escape' && state.selected){
+        closeStory()
+      }
+    }
+
+    function go(screen){
+      state.screen=screen
+      state.selected=null
+      state.query = screen==='explore' ? state.query : ''
+      render()
+      window.scrollTo({top:0,behavior:'smooth'})
+    }
+
+    function setPreview(mode){
+      state.previewMode = mode==='mobile' ? 'mobile' : 'desktop'
+      persist()
+      render()
+    }
+
+    function setTopic(topic){
+      state.topic=topic
+      state.screen=state.screen==='feed' ? 'feed' : 'explore'
+      render()
+    }
+
+    function openStory(id){
+      state.selected=id
+      render()
+    }
+
+    function closeStory(){
+      state.selected=null
+      render()
+    }
+
+    function toggleSave(id){
+      let message
+      if(state.saved.has(id)){
+        state.saved.delete(id)
+        message='Removed from your reading list'
+      }else{
+        state.saved.add(id)
+        message='Saved to your reading list'
+      }
+      persist()
+      render()
+      showToast(message)
+    }
+
+    function toggleComments(id){
+      state.commentOpen[id] = !state.commentOpen[id]
+      persist()
+      render()
+    }
+
+    function toggleCommentLike(id,index){
+      const key = commentKey(id,index)
+      if(state.commentLikes.has(key)) state.commentLikes.delete(key)
+      else state.commentLikes.add(key)
+      persist()
+      render()
+    }
+
+    function togglePrediction(id){
+      state.predictionOpen[id] = !state.predictionOpen[id]
+      persist()
+      render()
+    }
+
+    function predict(id,pick){
+      const s = storyById(id)
+      if(!s || (pick!=='up' && pick!=='down'))return
+      if(state.resolvedCalls.has(id)){
+        showToast('That call has already resolved')
+        return
+      }
+
+      const old = state.predictions[id]
+      if(old===pick){
+        showToast('You already called ' + cap(pick))
+        return
+      }
+
+      const community = communityFor(s)
+      if(old) community[old] = Math.max(0,community[old]-1)
+      community[pick] += 1
+      state.predictions[id]=pick
+      persist()
+      render()
+      showToast('Your 7-day call is ' + cap(pick) + '. It stays open until verified data can score it.')
+    }
+
+    function runSearch(value){
+      state.query = value.trim()
+      state.screen='explore'
+      render()
+    }
+
+    function showToast(message){
+      const el = document.getElementById('toast')
+      if(!el)return
+      el.innerHTML = '<div class="toast">' + message + '</div>'
+      setTimeout(function(){
+        if(el)el.innerHTML=''
+      },2600)
+    }
+
+    window.go=go
+    window.setPreview=setPreview
+    window.setTopic=setTopic
+    window.openStory=openStory
+    window.closeStory=closeStory
+    window.toggleSave=toggleSave
+    window.toggleComments=toggleComments
+    window.toggleCommentLike=toggleCommentLike
+    window.togglePrediction=togglePrediction
+    window.predict=predict
+    window.runSearch=runSearch
+    window.showToast=showToast
+
+    render()
+  </script>
+</body>
+</html>
+
