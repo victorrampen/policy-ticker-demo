@@ -834,6 +834,32 @@
       margin-top:15px
     }
 
+    .studio-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);gap:16px;align-items:start}
+    .studio-card{border:1px solid rgba(143,177,218,.13);background:rgba(13,29,47,.72);border-radius:16px;padding:18px}
+    .studio-card h2{margin:5px 0 8px;font-size:21px;letter-spacing:-.03em}
+    .studio-card h3{margin:4px 0 7px;font-size:16px;letter-spacing:-.02em}
+    .studio-card p{color:var(--muted);font-size:12px;line-height:1.5;margin:0 0 14px}
+    .studio-form{display:grid;gap:13px}
+    .studio-field{display:grid;gap:6px}
+    .studio-field label{color:#d9eaff;font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
+    .studio-field input,.studio-field select,.studio-field textarea{width:100%;border:1px solid rgba(143,177,218,.2);border-radius:10px;background:rgba(4,13,24,.58);color:#e9f3ff;padding:10px 11px;font-size:12px;outline:none}
+    .studio-field input:focus,.studio-field select:focus,.studio-field textarea:focus{border-color:rgba(123,184,255,.7);box-shadow:0 0 0 3px rgba(123,184,255,.1)}
+    .studio-field textarea{min-height:190px;resize:vertical;line-height:1.45}
+    .studio-field small{color:var(--faint);font-size:10px;line-height:1.4}
+    .studio-actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:4px}
+    .studio-status{border-radius:10px;padding:10px 11px;color:#cfe4ff;background:rgba(123,184,255,.07);border:1px solid rgba(123,184,255,.16);font-size:11px;line-height:1.4}
+    .studio-status.error{color:#ffd2d2;background:rgba(244,116,116,.08);border-color:rgba(244,116,116,.25)}
+    .studio-checks{display:grid;gap:7px;margin:13px 0}
+    .studio-check{display:flex;gap:8px;align-items:flex-start;color:#c6d5e7;font-size:11px;line-height:1.4}
+    .studio-check strong{color:var(--mint);font-size:13px;line-height:1}
+    .studio-check.warn strong{color:var(--yellow)}
+    .studio-review{border-color:rgba(92,224,183,.27);background:linear-gradient(145deg,rgba(18,55,58,.7),rgba(13,29,47,.8))}
+    .studio-review .source-inline{margin-top:10px}
+    .studio-review .source{flex:1 1 180px;min-width:0}
+    .studio-quote{border-left:3px solid var(--blue);padding:8px 10px;background:rgba(123,184,255,.06);color:#d7e8fb;font-size:11px;line-height:1.45;margin:12px 0}
+    .studio-empty{min-height:220px;display:grid;place-items:center;text-align:center;color:var(--muted);border:1px dashed rgba(143,177,218,.18);border-radius:14px;padding:20px}
+    .studio-empty strong{display:block;color:#d9eaff;margin-bottom:5px}
+
     .modal-backdrop{
       position:fixed;
       inset:0;
@@ -1004,6 +1030,8 @@
       .profile-hero{display:block}
       .profile-hero .actions{margin-left:0}
       .profile-avatar{margin-bottom:10px}
+      .studio-grid{grid-template-columns:1fr}
+      .studio-card{padding:14px}
       .modal{padding:18px}
       .modal h2{font-size:25px}
       .modal-footer{align-items:stretch;flex-direction:column}
@@ -1185,8 +1213,14 @@
   <div id="app"></div>
   <script>
     const PREDICTION_HORIZON = '7 days'
+    const API_BASE_URL = (typeof window !== 'undefined' && window.POLICY_TICKER_API_BASE ? String(window.POLICY_TICKER_API_BASE) : '').replace(/\/$/,'')
+    const APPROVED_BRIEFS_KEY = 'policy-ticker-approved-briefs'
+    let studioDraft = null
+    let studioBusy = false
+    let studioMessage = ''
+    let studioForm = {sourceUrl:'',sourceName:'',topic:'International relations',newsText:''}
 
-    const stories = [
+    let stories = [
       {
         id:'iran-diplomacy',
         tag:'INTERNATIONAL RELATIONS',
@@ -1630,6 +1664,34 @@
       }
     ];
 
+    function readApprovedBriefs(){
+      try{
+        const raw = JSON.parse(localStorage.getItem(APPROVED_BRIEFS_KEY) || '[]')
+        if(!Array.isArray(raw)) return []
+        return raw.filter(function(brief){
+          return brief && brief.id && brief.title && brief.graph && Array.isArray(brief.sources)
+        })
+      }catch(error){
+        return []
+      }
+    }
+
+    function persistApprovedBriefs(){
+      try{
+        const ids = new Set()
+        const approved = stories.filter(function(brief){
+          if(!String(brief.id || '').startsWith('ai-') || ids.has(brief.id)) return false
+          ids.add(brief.id)
+          return true
+        })
+        localStorage.setItem(APPROVED_BRIEFS_KEY,JSON.stringify(approved))
+      }catch(error){}
+    }
+
+    const approvedBriefs = readApprovedBriefs()
+    const builtInStoryIds = new Set(stories.map(function(story){return story.id}))
+    stories = approvedBriefs.filter(function(brief){return !builtInStoryIds.has(brief.id)}).concat(stories)
+
     const topics = ['All briefs','Economy & jobs','Prices & households','Central banks','International relations','Global outlook','Energy'];
 
     function esc(value){
@@ -1732,6 +1794,7 @@
           '<nav class="nav">' +
             navItem('feed','⌂','Your brief','') +
             navItem('explore','⌕','Explore','') +
+            navItem('studio','✦','Draft Studio','') +
             navItem('calendar','◷','Calendar','') +
             navItem('predictions','↗','Predictions',stats.active ? String(stats.active) : '') +
             navItem('saved','♡','Saved',String(state.saved.size)) +
@@ -1749,6 +1812,7 @@
         '<nav class="mobile-nav">' +
           '<button class="' + (state.screen==='feed' ? 'active' : '') + '" data-go="feed"><span>⌂</span>Brief</button>' +
           '<button class="' + (state.screen==='explore' ? 'active' : '') + '" data-go="explore"><span>⌕</span>Explore</button>' +
+          '<button class="' + (state.screen==='studio' ? 'active' : '') + '" data-go="studio"><span>✦</span>Draft</button>' +
           '<button class="' + (state.screen==='calendar' ? 'active' : '') + '" data-go="calendar"><span>◷</span>Calendar</button>' +
           '<button class="' + (state.screen==='predictions' ? 'active' : '') + '" data-go="predictions"><span>↗</span>Calls</button>' +
           '<button class="' + (state.screen==='account' ? 'active' : '') + '" data-go="account"><span>◎</span>Account</button>' +
@@ -1781,10 +1845,11 @@
     }
 
     function graphFor(s){
-      const graph = s.graph
-      const values = graph.values || []
-      const labels = graph.labels || []
-      const max = Math.max.apply(null,values)
+      const graph = s.graph || {}
+      const values = Array.isArray(graph.values) ? graph.values.filter(function(value){return Number.isFinite(Number(value))}) : []
+      const labels = Array.isArray(graph.labels) ? graph.labels : []
+      if(!values.length || !labels.length) return '<div class="post-visual"><div class="visual-head"><div><div class="visual-title">Chart pending review</div><div class="visual-subtitle">The supplied source did not include chartable figures.</div></div></div><p class="visual-note">No number has been invented for this draft.</p></div>'
+      const max = Math.max.apply(null,values) || 1
       const min = Math.min.apply(null,values)
       const eventIndex = Number.isInteger(graph.eventIndex) ? Math.max(0,Math.min(values.length-1,graph.eventIndex)) : null
       const graphTitle = '<div class="visual-head"><div><div class="visual-title">' + esc(graph.title) + '</div><div class="visual-subtitle">' + esc(graph.subtitle) + '</div></div></div>'
@@ -1867,18 +1932,18 @@
       const open = !!state.commentOpen[s.id]
       const first = comments[0]
       if(!open){
-        return '<div class="comments-preview"><p><strong>Discussion</strong>' + (first ? esc(first.text) : 'What would you check next?') + '</p><button data-action="toggle-comments" data-id="' + s.id + '">' + (comments.length ? 'View ' + s.comments + ' comments' : 'Start discussion') + '</button></div>'
+        return '<div class="comments-preview"><p><strong>Discussion</strong>' + (first ? esc(first.text) : 'What would you check next?') + '</p><button data-action="toggle-comments" data-id="' + esc(s.id) + '">' + (comments.length ? 'View ' + s.comments + ' comments' : 'Start discussion') + '</button></div>'
       }
 
-      return '<div class="comments-panel"><div class="comments-head"><div><div class="eyebrow">Discussion</div><strong>' + (comments.length ? s.comments + ' comments' : 'No comments yet') + '</strong></div><button data-action="toggle-comments" data-id="' + s.id + '">Hide</button></div>' + (comments.length ? comments.map(function(comment,index){
+      return '<div class="comments-panel"><div class="comments-head"><div><div class="eyebrow">Discussion</div><strong>' + (comments.length ? s.comments + ' comments' : 'No comments yet') + '</strong></div><button data-action="toggle-comments" data-id="' + esc(s.id) + '">Hide</button></div>' + (comments.length ? comments.map(function(comment,index){
         const key = commentKey(s.id,index)
         const liked = state.commentLikes.has(key)
-        return '<div class="comment"><div class="comment-avatar ' + (comment.tone || '') + '">' + esc(comment.avatar) + '</div><div class="comment-body"><div class="comment-meta"><strong>' + esc(comment.name) + '</strong><span>' + esc(comment.role) + '</span></div><p>' + esc(comment.text) + '</p><button class="comment-like ' + (liked ? 'liked' : '') + '" data-action="comment-like" data-id="' + s.id + '" data-comment="' + index + '">' + (liked ? '♥' : '♡') + ' ' + (comment.likes + (liked ? 1 : 0)) + '</button></div></div>'
+        return '<div class="comment"><div class="comment-avatar ' + esc(comment.tone || '') + '">' + esc(comment.avatar) + '</div><div class="comment-body"><div class="comment-meta"><strong>' + esc(comment.name) + '</strong><span>' + esc(comment.role) + '</span></div><p>' + esc(comment.text) + '</p><button class="comment-like ' + (liked ? 'liked' : '') + '" data-action="comment-like" data-id="' + esc(s.id) + '" data-comment="' + index + '">' + (liked ? '♥' : '♡') + ' ' + (comment.likes + (liked ? 1 : 0)) + '</button></div></div>'
       }).join('') : '<div class="comment-empty">This is the first discussion prompt for this brief.</div>') + '<div class="comment-composer"><span>Add a thoughtful question or piece of context</span><span>Coming next</span></div></div>'
     }
 
     function socialActions(s){
-      return '<div class="post-actions"><button class="post-action" data-action="toggle-comments" data-id="' + s.id + '">◌ <span>Discuss · ' + s.comments + '</span></button><button class="post-action save-action" data-action="save" data-id="' + s.id + '">' + (state.saved.has(s.id) ? '🔖' : '▱') + '</button></div>'
+      return '<div class="post-actions"><button class="post-action" data-action="toggle-comments" data-id="' + esc(s.id) + '">◌ <span>Discuss · ' + s.comments + '</span></button><button class="post-action save-action" data-action="save" data-id="' + esc(s.id) + '">' + (state.saved.has(s.id) ? '🔖' : '▱') + '</button></div>'
     }
 
     function postPrediction(s){
@@ -1888,7 +1953,7 @@
       let label = 'Make a ' + horizon + ' direction call'
       if(pick) label = 'Your ' + horizon + ' call: ' + cap(pick)
 
-      return '<div class="prediction-bonus"><div class="prediction-bonus-head"><div><span>Bonus direction call · ' + horizon + ' horizon</span><strong>' + label + '</strong></div><button class="prediction-toggle" data-action="toggle-prediction" data-id="' + s.id + '">' + (open ? 'Hide' : 'Make a ' + horizon + ' call') + '</button></div>' + (open ? predictionControls(s) : '') + '</div>'
+      return '<div class="prediction-bonus"><div class="prediction-bonus-head"><div><span>Bonus direction call · ' + horizon + ' horizon</span><strong>' + label + '</strong></div><button class="prediction-toggle" data-action="toggle-prediction" data-id="' + esc(s.id) + '">' + (open ? 'Hide' : 'Make a ' + horizon + ' call') + '</button></div>' + (open ? predictionControls(s) : '') + '</div>'
     }
 
     function predictionControls(s){
@@ -1907,12 +1972,12 @@
       }
 
       return '<div class="call-box">' +
-        '<div class="prediction-question">What direction do you expect for <strong>' + esc(s.graph.instrument) + '</strong> in the next <strong>' + horizon + '</strong>?</div>' +
+        '<div class="prediction-question">What direction do you expect for <strong>' + esc(s.graph.instrument || 'this indicator') + '</strong> in the next <strong>' + horizon + '</strong>?</div>' +
         '<div class="prediction-horizon">Short-term lens · the educational brief comes first. Scoring waits for a verified data feed.</div>' +
         '<div class="call-label"><span>My ' + horizon + ' call</span><span>' + (resolved ? 'Resolved' : 'Higher or lower?') + '</span></div>' +
         '<div class="call-buttons">' +
-          '<button class="call-btn up ' + (pick==='up' ? 'selected' : '') + '" data-action="predict" data-id="' + s.id + '" data-pick="up" ' + (resolved ? 'disabled' : '') + '>↑ Up</button>' +
-          '<button class="call-btn down ' + (pick==='down' ? 'selected' : '') + '" data-action="predict" data-id="' + s.id + '" data-pick="down" ' + (resolved ? 'disabled' : '') + '>↓ Down</button>' +
+          '<button class="call-btn up ' + (pick==='up' ? 'selected' : '') + '" data-action="predict" data-id="' + esc(s.id) + '" data-pick="up" ' + (resolved ? 'disabled' : '') + '>↑ Up</button>' +
+          '<button class="call-btn down ' + (pick==='down' ? 'selected' : '') + '" data-action="predict" data-id="' + esc(s.id) + '" data-pick="down" ' + (resolved ? 'disabled' : '') + '>↓ Down</button>' +
         '</div>' +
         result +
         '<div class="community">' + (total ? '<div class="community-line"><span>Community</span><strong>' + upPercent + '% ↑ · ' + (100-upPercent) + '% ↓</strong></div><div class="community-meter"><i class="up" style="width:' + upPercent + '%"></i><i class="down" style="width:' + (100-upPercent) + '%"></i></div>' : '<div class="community-line"><span>Community</span><strong>No calls yet</strong></div>') + '</div>' +
@@ -1920,15 +1985,15 @@
     }
 
     function storyCard(s){
-      return '<article class="post" data-story="' + s.id + '">' +
-        '<div class="post-head"><div class="post-avatar ' + s.avatarTone + '">' + s.avatar + '</div><div class="post-author"><strong>' + s.author + '</strong><span>' + s.authorRole + '</span></div><button class="post-more" data-action="toast" data-message="Post options are coming next">•••</button></div>' +
-        '<div class="post-topic">' + s.tag + '</div>' +
+      return '<article class="post" data-story="' + esc(s.id) + '">' +
+        '<div class="post-head"><div class="post-avatar ' + esc(s.avatarTone || 'purple') + '">' + esc(s.avatar || 'P') + '</div><div class="post-author"><strong>' + esc(s.author || 'Policy Ticker editorial') + '</strong><span>' + esc(s.authorRole || 'Source-linked brief') + '</span></div><button class="post-more" data-action="toast" data-message="Post options are coming next">•••</button></div>' +
+        '<div class="post-topic">' + esc(s.tag || 'POLICY') + '</div>' +
         eventMeta(s) +
-        '<h3>' + s.title + '</h3>' +
-        '<p class="post-dek">' + s.dek + '</p>' +
+        '<h3>' + esc(s.title || 'Untitled brief') + '</h3>' +
+        '<p class="post-dek">' + esc(s.dek || '') + '</p>' +
         graphFor(s) +
-        '<div class="post-caption"><strong>Why it matters</strong> ' + s.why + '<span class="insight-separator">·</span><span class="insight-follow">' + s.lens + '</span></div>' +
-        '<div class="feature-meta"><span class="mini-chip">' + s.read + ' read</span><span class="mini-chip">' + s.sources.length + ' source links</span></div>' +
+        '<div class="post-caption"><strong>Why it matters</strong> ' + esc(s.why || '') + '<span class="insight-separator">·</span><span class="insight-follow">' + esc(s.lens || '') + '</span></div>' +
+        '<div class="feature-meta"><span class="mini-chip">' + esc(s.read || '3 min') + ' read</span><span class="mini-chip">' + (s.sources || []).length + ' source links</span></div>' +
         '<div class="post-sources"><span class="source-label">Sources</span><div class="source-inline">' + sourceLinks(s) + '</div></div>' +
         socialActions(s) +
         commentsSection(s) +
@@ -1943,7 +2008,7 @@
       const stats = predictionStats()
 
       return '<section class="page">' +
-        '<div class="page-head"><div><div class="eyebrow">Your personalised policy brief</div><h1>Good morning, Victor.</h1><p>Recent, source-linked events explained before you decide what you think.</p></div><div class="actions"><button class="btn ghost" data-go="explore">Explore topics</button><button class="btn primary" data-go="account">View my account</button></div></div>' +
+        '<div class="page-head"><div><div class="eyebrow">Your personalised policy brief</div><h1>Good morning, Victor.</h1><p>Recent, source-linked events explained before you decide what you think.</p></div><div class="actions"><button class="btn ghost" data-go="explore">Explore topics</button><button class="btn ghost" data-go="studio">Add a source</button><button class="btn primary" data-go="account">View my account</button></div></div>' +
         '<div class="social-layout"><div class="social-feed">' +
           '<div class="feed-intro"><div><div class="eyebrow">Policy Ticker feed</div><h2>Recent events, explained</h2><p>Every brief shows what happened, why it matters, what could change next, and where the evidence comes from.</p></div><div class="social-tabs"><button class="active">For you</button><button data-go="explore">Explore</button></div></div>' +
           '<div class="filter-panel"><div class="eyebrow">Browse by subject</div><p>Choose the question you want to follow: jobs, household pressure, rates or international affairs.</p>' + topicButtons() + '</div>' +
@@ -1975,6 +2040,41 @@
         '<div class="section-row"><div><div class="eyebrow">' + resultLabel + '</div><h2>' + filtered.length + ' briefs to explore</h2></div></div>' +
         '<div class="stories">' + (filtered.length ? filtered.map(storyCard).join('') : '<div class="saved-empty"><strong>No matching briefs yet</strong>Try another topic or search term.</div>') + '</div>' +
       '</section>'
+    }
+
+    function studioConnectionNote(){
+      const host = typeof window !== 'undefined' ? window.location.hostname : ''
+      if(API_BASE_URL) return 'Connected to the Policy Ticker analysis backend at ' + API_BASE_URL + '.'
+      if(host.endsWith('github.io') || (typeof window !== 'undefined' && window.location.protocol==='file:')) return 'This shared static preview has no AI backend connected. The review interface is ready, but a Vercel deployment and API key are still required.'
+      return 'This page will use its same-origin /api/generate-brief function when deployed with Vercel.'
+    }
+
+    function studioReview(){
+      if(!studioDraft){
+        return '<div class="studio-card studio-empty"><div><strong>No draft waiting for approval</strong><span>Submit a source on the left. The AI will return a draft here; nothing is added to the feed automatically.</span></div></div>'
+      }
+
+      const verification = studioDraft.verification || {}
+      const checks = Array.isArray(verification.checks) ? verification.checks : []
+      const flags = Array.isArray(verification.flags) ? verification.flags : []
+      const checkMarkup = checks.map(function(check){
+        return '<div class="studio-check ' + (check.passed ? '' : 'warn') + '"><strong>' + (check.passed ? '✓' : '!') + '</strong><span>' + esc(check.label || 'Review check') + '</span></div>'
+      }).join('')
+      const flagMarkup = flags.map(function(flag){
+        return '<div class="studio-check warn"><strong>!</strong><span>' + esc(flag) + '</span></div>'
+      }).join('')
+
+      return '<div class="studio-card studio-review"><div class="eyebrow">Draft ready · pending human approval</div><h2>' + esc(studioDraft.title || 'Untitled draft') + '</h2><p>' + esc(studioDraft.dek || '') + '</p><div class="feature-meta"><span class="mini-chip">' + esc(studioDraft.flag || '🌍') + ' ' + esc(studioDraft.country || 'Country to confirm') + '</span><span class="mini-chip">Event: ' + esc(studioDraft.eventDate || 'Date to confirm') + '</span><span class="mini-chip">Confidence: ' + esc(verification.confidence || 'Review') + '</span></div><div class="studio-checks">' + (checkMarkup || '<div class="studio-check warn"><strong>!</strong><span>Review the evidence before approving.</span></div>') + flagMarkup + '</div><div class="studio-quote"><strong>What happened?</strong><br>' + esc(studioDraft.body || 'The draft did not include a clear event summary.') + '</div><p><strong>Why it matters:</strong> ' + esc(studioDraft.why || '') + '</p><p><strong>What could happen next:</strong> ' + esc(studioDraft.next || '') + '</p><div class="post-sources"><span class="source-label">Source supplied for review</span><div class="source-inline">' + sourceLinks(studioDraft) + '</div></div><div class="studio-actions"><button class="btn primary" data-action="approve-draft">Approve &amp; add to feed</button><button class="btn ghost" data-action="reject-draft">Reject draft</button></div></div>'
+    }
+
+    function studioPage(){
+      const staticDemo = typeof window !== 'undefined' && (window.location.hostname.endsWith('github.io') || window.location.protocol==='file:')
+      const statusError = /error|failed|missing|not connected|unable/i.test(studioMessage)
+      const topicOptions = topics.filter(function(topic){return topic!=='All briefs'}).map(function(topic){
+        return '<option value="' + esc(topic) + '" ' + (studioForm.topic===topic ? 'selected' : '') + '>' + esc(topic) + '</option>'
+      }).join('')
+
+      return '<section class="page"><div class="page-head"><div><div class="eyebrow">AI-assisted editorial workspace</div><h1>Turn a source into a draft.</h1><p>Paste the source text and link. Policy Ticker will structure the brief, extract only supplied numbers, flag uncertainty and wait for your approval.</p></div><div class="actions"><button class="btn ghost" data-go="feed">Back to feed</button></div></div><div class="notice">The AI creates a reviewable draft. It does not publish automatically, and it cannot guarantee that the supplied source itself is truthful.</div><div class="studio-grid"><div class="studio-card"><div class="eyebrow">1 · Supply evidence</div><h2>What should Policy Ticker analyse?</h2><p>Use a source you are allowed to use. Paste the relevant text or a concise excerpt rather than asking the model to invent a story from a headline.</p><form class="studio-form" data-studio-form><div class="studio-field"><label for="studio-source-url">Source URL</label><input id="studio-source-url" name="sourceUrl" type="url" required placeholder="https://..." value="' + esc(studioForm.sourceUrl) + '"><small>The backend will attach this link to the draft. It will not invent a source URL.</small></div><div class="studio-field"><label for="studio-source-name">Source name</label><input id="studio-source-name" name="sourceName" placeholder="ONS, ECB, AP…" value="' + esc(studioForm.sourceName) + '"></div><div class="studio-field"><label for="studio-topic">Topic</label><select id="studio-topic" name="topic">' + topicOptions + '</select></div><div class="studio-field"><label for="studio-news-text">Source text or permitted excerpt</label><textarea id="studio-news-text" name="newsText" required minlength="80" placeholder="Paste the source text here, including the event date and exact figures...">' + esc(studioForm.newsText) + '</textarea><small>For accurate graphs, include the exact figures and units in the supplied text.</small></div><div class="studio-status">' + esc(studioConnectionNote()) + '</div><div class="studio-actions"><button class="btn primary" type="submit" ' + (studioBusy || (staticDemo && !API_BASE_URL) ? 'disabled' : '') + '>' + (studioBusy ? 'Analysing…' : 'Create draft for review') + '</button><button class="btn muted" type="button" data-action="clear-studio">Clear</button></div></form>' + (studioMessage ? '<div class="studio-status ' + (statusError ? 'error' : '') + '" style="margin-top:12px">' + esc(studioMessage) + '</div>' : '') + '</div><div>' + studioReview() + '</div></div></section>'
     }
 
     function calendarPage(){
@@ -2046,13 +2146,14 @@
 
     function modal(s){
       if(!s)return ''
-      return '<div class="modal-backdrop" data-action="backdrop"><div class="modal"><button class="modal-close" data-action="close" aria-label="Close">×</button><div class="kicker">' + s.tag + ' · SOURCE-LINKED BRIEF</div><h2>' + s.title + '</h2><p class="lead">' + s.dek + '</p><div class="feature-meta"><span class="mini-chip">' + esc(s.flag || '🌍') + ' ' + esc(s.country || 'Global') + '</span><span class="mini-chip">Event: ' + esc(s.eventDate || 'Date to be confirmed') + '</span><span class="mini-chip">' + s.read + ' read</span><span class="mini-chip">Impact: ' + s.impact + '</span></div>' + graphFor(s) + '<div class="modal-grid"><div class="modal-section"><h3>What happened?</h3><p>' + s.body + '</p></div><div class="modal-section"><h3>Why it matters</h3><p>' + s.why + '</p></div><div class="modal-section"><h3>What could happen next?</h3><p>' + s.next + '</p></div><div class="modal-section"><h3>Sources &amp; evidence</h3><p>' + esc(s.sourceNote || 'Open the linked primary source to check the date, definition and numbers behind this brief.') + '</p><div class="source-row">' + sourceLinks(s) + '</div></div></div><div class="modal-call"><div class="eyebrow">Bonus direction call · 7-day horizon</div><p style="color:var(--muted);font-size:12px;margin:5px 0 10px">A fixed-window learning exercise; results stay unscored until verified data is connected.</p>' + predictionControls(s) + '</div><div class="modal-footer"><button class="btn ghost" data-action="save" data-id="' + s.id + '">' + (state.saved.has(s.id) ? '♥ Saved' : '♡ Save brief') + '</button><button class="btn primary" data-go="account">See my record →</button></div></div></div>'
+      return '<div class="modal-backdrop" data-action="backdrop"><div class="modal"><button class="modal-close" data-action="close" aria-label="Close">×</button><div class="kicker">' + esc(s.tag || 'POLICY') + ' · SOURCE-LINKED BRIEF</div><h2>' + esc(s.title || 'Untitled brief') + '</h2><p class="lead">' + esc(s.dek || '') + '</p><div class="feature-meta"><span class="mini-chip">' + esc(s.flag || '🌍') + ' ' + esc(s.country || 'Global') + '</span><span class="mini-chip">Event: ' + esc(s.eventDate || 'Date to be confirmed') + '</span><span class="mini-chip">' + esc(s.read || '3 min') + ' read</span><span class="mini-chip">Impact: ' + esc(s.impact || 'Review') + '</span></div>' + graphFor(s) + '<div class="modal-grid"><div class="modal-section"><h3>What happened?</h3><p>' + esc(s.body || '') + '</p></div><div class="modal-section"><h3>Why it matters</h3><p>' + esc(s.why || '') + '</p></div><div class="modal-section"><h3>What could happen next?</h3><p>' + esc(s.next || '') + '</p></div><div class="modal-section"><h3>Sources &amp; evidence</h3><p>' + esc(s.sourceNote || 'Open the linked primary source to check the date, definition and numbers behind this brief.') + '</p><div class="source-row">' + sourceLinks(s) + '</div></div></div><div class="modal-call"><div class="eyebrow">Bonus direction call · 7-day horizon</div><p style="color:var(--muted);font-size:12px;margin:5px 0 10px">A fixed-window learning exercise; results stay unscored until verified data is connected.</p>' + predictionControls(s) + '</div><div class="modal-footer"><button class="btn ghost" data-action="save" data-id="' + esc(s.id) + '">' + (state.saved.has(s.id) ? '♥ Saved' : '♡ Save brief') + '</button><button class="btn primary" data-go="account">See my record →</button></div></div></div>'
     }
 
     function render(){
       let content
       if(state.screen==='feed') content = feedPage()
       else if(state.screen==='explore') content = explorePage()
+      else if(state.screen==='studio') content = studioPage()
       else if(state.screen==='calendar') content = calendarPage()
       else if(state.screen==='predictions') content = predictionsPage()
       else if(state.screen==='saved') content = savedPage()
@@ -2062,6 +2163,7 @@
       const app = document.getElementById('app')
       app.innerHTML = shell(content)
       app.onclick = handleClick
+      app.onsubmit = handleSubmit
       app.onkeydown = handleKeydown
     }
 
@@ -2098,11 +2200,95 @@
         showToast('Profile link copied in this prototype')
       }else if(action==='preview'){
         setPreview(target.dataset.preview)
+      }else if(action==='approve-draft'){
+        approveDraft()
+      }else if(action==='reject-draft'){
+        rejectDraft()
+      }else if(action==='clear-studio'){
+        clearStudio()
       }else if(action==='toast'){
         showToast(target.dataset.message || 'Coming next')
       }else if(target.dataset.story){
         openStory(target.dataset.story)
       }
+    }
+
+    async function handleSubmit(event){
+      if(!event.target.matches('[data-studio-form]'))return
+      event.preventDefault()
+      if(studioBusy)return
+
+      const formData = new FormData(event.target)
+      studioForm = {
+        sourceUrl:String(formData.get('sourceUrl') || '').trim(),
+        sourceName:String(formData.get('sourceName') || '').trim(),
+        topic:String(formData.get('topic') || 'International relations'),
+        newsText:String(formData.get('newsText') || '').trim()
+      }
+
+      if(!studioForm.sourceUrl || !studioForm.newsText){
+        studioMessage='Add a source URL and the relevant source text before analysing.'
+        render()
+        return
+      }
+
+      const host = typeof window !== 'undefined' ? window.location.hostname : ''
+      if(!API_BASE_URL && (host.endsWith('github.io') || (typeof window !== 'undefined' && window.location.protocol==='file:'))){
+        studioMessage='This static preview is not connected to the AI backend yet. Deploy the private project to Vercel, then configure its backend URL here.'
+        render()
+        return
+      }
+
+      studioBusy=true
+      studioMessage='Analysing the supplied source and preparing evidence checks…'
+      studioDraft=null
+      render()
+
+      try{
+        const endpoint = (API_BASE_URL || '') + '/api/generate-brief'
+        const response = await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(studioForm)})
+        let result = null
+        try{result = await response.json()}catch(error){result={}}
+        if(!response.ok || !result.success) throw new Error(result.error || 'The analysis request failed.')
+        studioDraft=result.data
+        studioMessage='Draft ready. Review the evidence and approve it before it enters this prototype feed.'
+      }catch(error){
+        studioMessage='Error: ' + (error.message || 'Unable to reach the analysis backend.')
+      }finally{
+        studioBusy=false
+        render()
+      }
+    }
+
+    function approveDraft(){
+      if(!studioDraft)return
+      const approved = Object.assign({},studioDraft,{
+        author:'Policy Ticker editorial',
+        authorRole:'AI-assisted draft · approved for prototype feed',
+        avatar:'P',
+        avatarTone:'purple',
+        saved:false
+      })
+      stories = [approved].concat(stories.filter(function(story){return story.id!==approved.id}))
+      persistApprovedBriefs()
+      studioDraft=null
+      studioMessage='Approved and added to this browser’s Policy Ticker feed.'
+      state.screen='feed'
+      render()
+      showToast('Draft approved and added to the feed')
+    }
+
+    function rejectDraft(){
+      studioDraft=null
+      studioMessage='Draft rejected. Nothing was added to the feed.'
+      render()
+    }
+
+    function clearStudio(){
+      studioDraft=null
+      studioMessage=''
+      studioForm={sourceUrl:'',sourceName:'',topic:'International relations',newsText:''}
+      render()
     }
 
     function handleKeydown(event){
