@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Signal — prototype</title>
+  <title>Policy Ticker — prototype</title>
   <style>
     :root{
       --bg:#08111f;
@@ -1208,9 +1208,9 @@
         ],
         sourceNote:'Official ONS estimates. The chart shows the published three-month vacancy series; it is not a live market-price chart.',
         topics:['Economy & jobs'],
-        author:'Signal editorial',
+        author:'Policy Ticker editorial',
         authorRole:'Source-linked brief · updated 20 Oct 2026',
-        avatar:'S',
+        avatar:'P',
         avatarTone:'orange',
         comments:0,
         commentPreview:[],
@@ -1237,9 +1237,9 @@
         ],
         sourceNote:'Official ONS estimates. Total pay includes bonuses; regular pay excludes bonuses. The chart compares weekly pay levels, while real growth is reported separately in the source.',
         topics:['Economy & jobs','Central banks'],
-        author:'Signal editorial',
+        author:'Policy Ticker editorial',
         authorRole:'Source-linked brief · updated 20 Oct 2026',
-        avatar:'S',
+        avatar:'P',
         avatarTone:'purple',
         comments:0,
         commentPreview:[],
@@ -1266,9 +1266,9 @@
         ],
         sourceNote:'Primary source: the IMF’s October 2026 World Economic Outlook. The chart shows IMF projections, not observed returns or a market-price forecast.',
         topics:['Global outlook','Economy & jobs'],
-        author:'Signal editorial',
+        author:'Policy Ticker editorial',
         authorRole:'Source-linked brief · updated 13 Oct 2026',
-        avatar:'S',
+        avatar:'P',
         avatarTone:'blue',
         comments:0,
         commentPreview:[],
@@ -1295,9 +1295,9 @@
         ],
         sourceNote:'Primary source: Ofgem’s price-cap announcement. The graph shows the published typical annual direct-debit benchmark, not an individual bill or an energy-market price.',
         topics:['Prices & households','Energy'],
-        author:'Signal editorial',
+        author:'Policy Ticker editorial',
         authorRole:'Source-linked brief · effective 1 Oct 2026',
-        avatar:'S',
+        avatar:'P',
         avatarTone:'green',
         comments:0,
         commentPreview:[],
@@ -1324,9 +1324,9 @@
         ],
         sourceNote:'Primary source: the Bank of England’s policy summary and minutes. The chart shows the vote split, not a market-price path.',
         topics:['Central banks','Economy & jobs'],
-        author:'Signal editorial',
+        author:'Policy Ticker editorial',
         authorRole:'Source-linked brief · updated 17 Sep 2026',
-        avatar:'S',
+        avatar:'P',
         avatarTone:'orange',
         comments:0,
         commentPreview:[],
@@ -1353,9 +1353,9 @@
         ],
         sourceNote:'Primary source: the FCDO sanctions notice. The chart counts the two additions recorded in the notice; it is not an estimate of economic impact.',
         topics:['International relations'],
-        author:'Signal editorial',
+        author:'Policy Ticker editorial',
         authorRole:'Source-linked brief · updated 12 Oct 2026',
-        avatar:'S',
+        avatar:'P',
         avatarTone:'red',
         comments:0,
         commentPreview:[],
@@ -1382,9 +1382,9 @@
         ],
         sourceNote:'Primary source: UN Meetings Coverage. The chart shows the two vetoes recorded in the UN account and the fact that the proposed extension did not pass; it does not measure the wider state of sanctions.',
         topics:['International relations'],
-        author:'Signal editorial',
+        author:'Policy Ticker editorial',
         authorRole:'Source-linked brief · updated 1 Oct 2026',
-        avatar:'S',
+        avatar:'P',
         avatarTone:'blue',
         comments:0,
         commentPreview:[],
@@ -1412,9 +1412,9 @@
         ],
         sourceNote:'Primary source: IAEA Board report GOV/2026/50. The chart is a clearly labelled status indicator from the report, not a count of facilities or a claim about the purpose of Iran’s programme.',
         topics:['International relations'],
-        author:'Signal editorial',
+        author:'Policy Ticker editorial',
         authorRole:'Source-linked brief · updated 1 Sep 2026',
-        avatar:'S',
+        avatar:'P',
         avatarTone:'purple',
         comments:0,
         commentPreview:[],
@@ -1442,9 +1442,9 @@
         ],
         sourceNote:'Primary source: the Federal Reserve’s statement. The chart tracks the lower bound of the target range before and after the decision; it is not a prediction of the next move.',
         topics:['Central banks','Economy & jobs'],
-        author:'Signal editorial',
+        author:'Policy Ticker editorial',
         authorRole:'Source-linked brief · updated 16 Sep 2026',
-        avatar:'S',
+        avatar:'P',
         avatarTone:'blue',
         comments:0,
         commentPreview:[],
@@ -1471,9 +1471,9 @@
         ],
         sourceNote:'Primary source: the European Commission press release. The chart counts the selected projects and the member states named in the announcement; it does not estimate future output.',
         topics:['Global outlook','Economy & jobs'],
-        author:'Signal editorial',
+        author:'Policy Ticker editorial',
         authorRole:'Source-linked brief · updated 9 Oct 2026',
-        avatar:'S',
+        avatar:'P',
         avatarTone:'green',
         comments:0,
         commentPreview:[],
@@ -1501,7 +1501,7 @@
     function loadState(){
       let raw = null
       try{
-        raw = JSON.parse(localStorage.getItem('signal-prototype-state') || 'null')
+        raw = JSON.parse(localStorage.getItem('policy-ticker-state') || localStorage.getItem('signal-prototype-state') || 'null')
       }catch(error){}
 
       const savedTopic = raw && topics.includes(raw.topic) ? raw.topic : 'All briefs'
@@ -1526,7 +1526,7 @@
 
     function persist(){
       try{
-        localStorage.setItem('signal-prototype-state',JSON.stringify({
+        localStorage.setItem('policy-ticker-state',JSON.stringify({
           previewMode:state.previewMode,
           topic:state.topic,
           saved:Array.from(state.saved),
@@ -1579,7 +1579,7 @@
       const stats = predictionStats()
       return '<div class="app ' + (state.previewMode==='mobile' ? 'device-preview' : '') + '">' +
         '<aside class="sidebar">' +
-          '<div class="brand"><div class="brand-mark">S</div><div><div class="brand-name">signal</div><div class="brand-sub">policy, with context</div></div></div>' +
+          '<div class="brand"><div class="brand-mark">P</div><div><div class="brand-name">policy ticker</div><div class="brand-sub">policy, with context</div></div></div>' +
           '<div class="nav-label">Workspace</div>' +
           '<nav class="nav">' +
             navItem('feed','⌂','Your brief','') +
@@ -1591,7 +1591,7 @@
             navItem('about','i','How it works','') +
           '</nav>' +
           '<div class="sidebar-spacer"></div>' +
-          '<div class="side-card"><strong>Make it yours</strong><p>Choose the topics and markets you want Signal to watch.</p><button data-action="toast" data-message="Personalisation flow coming next">Customise feed</button></div>' +
+          '<div class="side-card"><strong>Make it yours</strong><p>Choose the topics and markets you want Policy Ticker to watch.</p><button data-action="toast" data-message="Personalisation flow coming next">Customise feed</button></div>' +
           '<button class="profile" data-go="account"><div class="avatar">VR</div><div><strong>Victor Rampen</strong><small>' + stats.correct + ' correct · ' + stats.wrong + ' missed</small></div><div class="dots">···</div></button>' +
         '</aside>' +
         '<main>' +
@@ -1797,7 +1797,7 @@
       return '<section class="page">' +
         '<div class="page-head"><div><div class="eyebrow">Your personalised policy brief</div><h1>Good morning, Victor.</h1><p>Recent, source-linked events explained before you decide what you think.</p></div><div class="actions"><button class="btn ghost" data-go="explore">Explore topics</button><button class="btn primary" data-go="account">View my account</button></div></div>' +
         '<div class="social-layout"><div class="social-feed">' +
-          '<div class="feed-intro"><div><div class="eyebrow">Signal feed</div><h2>Recent events, explained</h2><p>Every brief shows what happened, why it matters, what could change next, and where the evidence comes from.</p></div><div class="social-tabs"><button class="active">For you</button><button data-go="explore">Explore</button></div></div>' +
+          '<div class="feed-intro"><div><div class="eyebrow">Policy Ticker feed</div><h2>Recent events, explained</h2><p>Every brief shows what happened, why it matters, what could change next, and where the evidence comes from.</p></div><div class="social-tabs"><button class="active">For you</button><button data-go="explore">Explore</button></div></div>' +
           '<div class="filter-panel"><div class="eyebrow">Browse by subject</div><p>Choose the question you want to follow: jobs, household pressure, rates or international affairs.</p>' + topicButtons() + '</div>' +
           '<div class="section-row"><div><div class="eyebrow">The short list</div><h2>' + filtered.length + ' source-linked briefs</h2></div><span class="count-label">' + (stats.total ? stats.correct + ' right · ' + stats.wrong + ' missed' : 'No scored calls yet') + '</span></div>' +
           '<div class="stories">' + (filtered.length ? filtered.map(storyCard).join('') : '<div class="saved-empty"><strong>No briefs in this topic yet</strong>Try another filter.</div>') + '</div>' +
@@ -1814,7 +1814,7 @@
       const resultLabel = q ? 'Search results for “' + esc(state.query) + '”' : 'Latest explainers'
 
       return '<section class="page">' +
-        '<div class="page-head"><div><div class="eyebrow">Explore</div><h1>Find the signal.</h1><p>Browse by topic, then open a brief when you want the context behind the headline.</p></div><div class="actions"><button class="btn primary" data-action="toast" data-message="Watchlist builder coming next">+ Follow a topic</button></div></div>' +
+        '<div class="page-head"><div><div class="eyebrow">Explore</div><h1>Find the context.</h1><p>Browse by topic, then open a brief when you want the context behind the headline.</p></div><div class="actions"><button class="btn primary" data-action="toast" data-message="Watchlist builder coming next">+ Follow a topic</button></div></div>' +
         '<div class="filter-panel"><div class="eyebrow">Browse by subject</div><p>International relations covers conflict, diplomacy, sanctions and agreements; the other filters cover the economic mechanism around them.</p>' + topicButtons() + '</div>' +
         '<div class="explore-grid">' +
           '<button class="topic-card orange" data-action="topic" data-topic="Central banks"><strong>Central banks</strong><span>Rates, inflation, policy decisions</span></button>' +
@@ -1861,7 +1861,7 @@
       const stats = predictionStats()
       return '<section class="page">' +
         '<div class="page-head"><div><div class="eyebrow">Short-term direction calls</div><h1>Make a 7-day call.</h1><p>The brief comes first. If you want the extra challenge, choose a direction and keep the time window fixed.</p></div><div class="actions"><button class="btn ghost" data-go="account">Open my account</button></div></div>' +
-        '<div class="notice">Prediction scoring is deliberately blank until Signal is connected to a verified market or indicator data feed. No result is marked right or wrong from invented numbers.</div>' +
+        '<div class="notice">Prediction scoring is deliberately blank until Policy Ticker is connected to a verified market or indicator data feed. No result is marked right or wrong from invented numbers.</div>' +
         '<div class="stats"><div class="stat-card"><div class="eyebrow">Accuracy</div><strong class="good">' + displayAccuracy(stats) + '</strong><span>' + stats.correct + ' correct from ' + stats.total + ' resolved 7-day calls</span></div><div class="stat-card"><div class="eyebrow">Correct</div><strong class="good">' + stats.correct + '</strong><span>Calls that matched verified data</span></div><div class="stat-card"><div class="eyebrow">Missed</div><strong class="miss">' + stats.wrong + '</strong><span>Calls that went the other way</span></div><div class="stat-card"><div class="eyebrow">Open calls</div><strong class="cool">' + stats.active + '</strong><span>Waiting for a verified seven-day result</span></div></div>' +
         '<div class="section-row"><div><div class="eyebrow">Your calls</div><h2>What do you think happens next?</h2></div><span class="count-label">Up or down, not hot takes</span></div>' +
         '<div class="prediction-list">' + stories.map(predictionCard).join('') + '</div>' +
@@ -1880,7 +1880,7 @@
         '<div class="stats"><div class="stat-card"><div class="eyebrow">Accuracy</div><strong class="good">' + displayAccuracy(stats) + '</strong><span>How often your resolved 7-day calls are right</span></div><div class="stat-card"><div class="eyebrow">Correct</div><strong class="good">' + stats.correct + '</strong><span>7-day calls that matched verified data</span></div><div class="stat-card"><div class="eyebrow">Missed</div><strong class="miss">' + stats.wrong + '</strong><span>7-day calls that did not</span></div><div class="stat-card"><div class="eyebrow">Open</div><strong class="cool">' + stats.active + '</strong><span>Calls still waiting</span></div></div>' +
         '<div class="account-grid"><div class="card"><div class="eyebrow">Your 7-day call record</div><div class="record-summary"><strong>' + displayAccuracy(stats) + '</strong><span>' + stats.correct + ' right · ' + stats.wrong + ' wrong · ' + stats.total + ' resolved</span></div><div class="record-bar"><i class="correct" style="width:' + correctWidth + '%"></i><i class="wrong" style="width:' + wrongWidth + '%"></i></div><div class="section-row"><div><div class="eyebrow">Recent activity</div><h3>Calls you can learn from</h3></div></div><div class="account-list">' +
           (rows.length ? rows.map(function(row){return '<div class="account-row"><span>' + row.topic + '</span><strong>' + cap(row.call) + ' → ' + cap(row.outcome) + '</strong><span class="result ' + (row.result==='correct' ? 'hit' : 'miss') + '">' + (row.result==='correct' ? 'Correct' : 'Missed') + '</span><span class="date-label">' + row.date + '</span></div>'}).join('') : '<div class="saved-empty">No resolved calls yet.</div>') +
-        '</div></div><aside class="right-column"><div class="card"><div class="eyebrow">Social signal</div><h3>Your record is part of the story.</h3><p class="social-note">Readers can compare their calls with the community without turning the brief into a hot-take feed.</p><div class="social-stat"><span>Community rank</span><strong>Not ranked yet</strong></div><div class="social-stat"><span>Reading streak</span><strong>Not measured</strong></div><div class="social-stat"><span>Topics called</span><strong>' + Object.keys(state.predictions).length + '</strong></div><button class="btn ghost" style="width:100%;margin-top:13px" data-action="toast" data-message="Profile sharing is ready in the next build">View public profile</button></div><div class="card"><div class="eyebrow">How scoring works</div><h3>Calls stay open for seven days after the event.</h3><p class="social-note">Choose a direction. After seven days, Signal will compare it with a verified data point and add the result to your record.</p><button class="text-link" data-go="about">Read the product principles →</button></div></aside></div>' +
+        '</div></div><aside class="right-column"><div class="card"><div class="eyebrow">Community record</div><h3>Your record is part of the story.</h3><p class="social-note">Readers can compare their calls with the community without turning the brief into a hot-take feed.</p><div class="social-stat"><span>Community rank</span><strong>Not ranked yet</strong></div><div class="social-stat"><span>Reading streak</span><strong>Not measured</strong></div><div class="social-stat"><span>Topics called</span><strong>' + Object.keys(state.predictions).length + '</strong></div><button class="btn ghost" style="width:100%;margin-top:13px" data-action="toast" data-message="Profile sharing is ready in the next build">View public profile</button></div><div class="card"><div class="eyebrow">How scoring works</div><h3>Calls stay open for seven days after the event.</h3><p class="social-note">Choose a direction. After seven days, Policy Ticker will compare it with a verified data point and add the result to your record.</p><button class="text-link" data-go="about">Read the product principles →</button></div></aside></div>' +
       '</section>'
     }
 
@@ -1893,7 +1893,7 @@
     }
 
     function aboutPage(){
-      return '<section class="page"><div class="about-hero"><div class="eyebrow">About Signal</div><h2>The context layer between the headline and the decision.</h2><p>Signal is a personalised policy-news product for people who want to understand how public decisions become real-world consequences — without reading five different articles first.</p><div class="notice">Prototype principle: this is information and education, not personal financial advice.</div></div><div class="section-row"><div><div class="eyebrow">How the product works</div><h2>Four things every brief should answer</h2></div></div><div class="about-grid"><div class="principle"><div class="principle-no">01</div><div><h3>What happened?</h3><p>One clean summary with the original source and a visible freshness timestamp.</p></div></div><div class="principle"><div class="principle-no">02</div><div><h3>Why does it matter?</h3><p>Explain the mechanism, not a dramatic opinion or a generic market prediction.</p></div></div><div class="principle"><div class="principle-no">03</div><div><h3>What could change?</h3><p>Give users the next data point, vote or decision that would confirm or weaken the story.</p></div></div><div class="principle"><div class="principle-no">04</div><div><h3>Can I follow it?</h3><p>Use watchlists, a calendar and predictions to turn one article into a repeat habit.</p></div></div></div></section>'
+      return '<section class="page"><div class="about-hero"><div class="eyebrow">About Policy Ticker</div><h2>The context layer between the headline and the decision.</h2><p>Policy Ticker is a personalised policy-news product for people who want to understand how public decisions become real-world consequences — without reading five different articles first.</p><div class="notice">Prototype principle: this is information and education, not personal financial advice.</div></div><div class="section-row"><div><div class="eyebrow">How the product works</div><h2>Four things every brief should answer</h2></div></div><div class="about-grid"><div class="principle"><div class="principle-no">01</div><div><h3>What happened?</h3><p>One clean summary with the original source and a visible freshness timestamp.</p></div></div><div class="principle"><div class="principle-no">02</div><div><h3>Why does it matter?</h3><p>Explain the mechanism, not a dramatic opinion or a generic market prediction.</p></div></div><div class="principle"><div class="principle-no">03</div><div><h3>What could change?</h3><p>Give users the next data point, vote or decision that would confirm or weaken the story.</p></div></div><div class="principle"><div class="principle-no">04</div><div><h3>Can I follow it?</h3><p>Use watchlists, a calendar and predictions to turn one article into a repeat habit.</p></div></div></div></section>'
     }
 
     function modal(s){
